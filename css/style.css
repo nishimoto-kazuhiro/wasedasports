@@ -1,0 +1,217 @@
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .scorers {
+        background-color: #fff;
+        padding: 5px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .scorers p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .scorers .half {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #800020;
+    }
+
+    .right {
+        text-align: right;
+    }
+
+    .header {
+        text-align: center;
+    }
+
+    h3 {
+        border-bottom: solid 3px #b7193f;
+        color: #b7193f;
+    }
+
+    .content h3 {
+        padding-bottom: 0.2rem;
+    }
+
+    .wp-element-caption {
+        color: #800020;
+        margin-top: 0px;
+        font-size: 1rem !important;
+    }
+
+    .answer {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .question {
+        margin-top: 27px !important;
+        font-weight: bold;
+    }
+
+    .upper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 20px 0;
+    }
+
+    .name-box {
+        width: 500px;
+        height: 230px;
+        background-image: url(https://wasedasports-sousupo.com/wp-content/uploads/2025/02/player-directory-background.jpg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .number {
+        font-size: 4rem;
+        font-weight: bold;
+        margin: 0 0.5rem;
+    }
+
+    .name {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 0.1rem;
+    }
+
+    .kana {
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+
+    .name-container {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.5;
+        margin: 0 0.5rem;
+    }
+
+    @media screen and (max-width: 850px) {
+        .profile-photo {
+            width:108px;
+            height: 138px;
+        }
+
+        .name-box {
+            background-image: url(https://wasedasports-sousupo.com/wp-content/uploads/2025/02/player-directory-mini.jpg);
+            width: 300px;
+            height: 138px;
+            display: block;
+            align-items: flex-end;
+        }
+
+        .number {
+            font-size: 2rem;
+        }
+
+        .name {
+            font-size: 1.5rem;
+        }
+    }
+
+    .baseball-profile-table {
+        width: 100%;
+    }
+
+    .baseball-profile-table dl {
+        padding: 0.5rem 0;
+        margin: 0;
+        display: flex;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .baseball-profile-table dt {
+        width: 105px;
+        font-weight: bold;
+    }
+
+    .baseball-profile-table dd {
+        margin-left: 5px;
+    }
+
+    .baseball-data-table, .baseball-score-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0 !important;
+        margin-bottom: 10px;
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .baseball-data-table th, .baseball-data-table td, .baseball-score-table th, .baseball-score-table td {
+        font-size: 0.9rem;
+        padding: 0 0.3rem !important;
+        border: 1px solid #ddd;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .baseball-data-table th, .baseball-score-table th {
+        background-color: #f2f2f2;
+        color: #800020;
+    }
+
+    .sticky {
+        position: -webkit-sticky;
+        position: sticky;
+        left: 0;
+        background-color: #fff;
+        z-index: 1;
+    }
+
+    .waseda {
+        background-color: #800020;
+        color: #fff;
+    }
+
+    .baseball-data-table tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+
+    .baseball-data-table tr:nth-child(even) .sticky {
+        background-color: #fafafa;
+    }
+
+    .hit {
+        background-color: #800020;
+        font-weight: bold;
+        color: #fff;
+    }
+
+    .hit-rbi {
+        background-color: #800020;
+        font-weight: bold;
+        color: #F7CE46;
+    }
+
+    .rbi {
+        color: #f5c115;
+        font-weight: bold;
+    }
+
+    .baseball-runs {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin: 20px 0;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .baseball-runs-team {
+        font-size: 1rem;
+        flex: 1;
+    }
+
+    .baseball-runs-score {
+        font-size: 1.5rem;
+    }
