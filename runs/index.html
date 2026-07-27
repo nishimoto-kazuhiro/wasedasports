@@ -5,88 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>野球スコアHTML 出力装置</title>
   <link rel="icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../css/style.css">
   <style>
-    .sp-gen { margin: 18px 0 26px; font-family: sans-serif; }
-    .sp-gen__wrap { border: 1px solid rgba(0,0,0,.10); border-radius: 14px; background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,.06); overflow: hidden; }
-    .sp-gen__head { padding: 14px 14px 10px; border-bottom: 1px solid rgba(0,0,0,.08); }
-    .sp-gen__title { margin: 0; font-size: 18px; line-height: 1.25; font-weight: 900; }
-    .sp-gen__desc { margin: 6px 0 0; font-size: 13px; opacity: .8; }
-
-    .sp-gen__body { padding: 14px; display: flex; flex-direction: column; gap: 20px; }
-    .sp-gen__grid { display: flex; flex-direction: column; gap: 14px; }
-    .sp-gen__row { display: grid; grid-template-columns: 1fr; gap: 6px; }
-    .sp-gen__label { font-size: 12px; font-weight: 900; opacity: .85; }
-    
-    /* 設定エリア */
-    .sp-gen__config-wrap { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: rgba(0,0,0,.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,.05); }
-    .sp-gen__config-item { display: flex; align-items: center; gap: 8px; }
-    .sp-gen__input-num { width: 65px !important; text-align: center; font-weight: bold; }
-    
-    /* 選択パーツのスタイル */
-    .sp-gen__radio-group { display: flex; gap: 12px; align-items: center; }
-    .sp-gen__radio-label { display: flex; align-items: center; gap: 4px; font-size: 14px; cursor: pointer; font-weight: bold; }
-    .sp-gen__radio-input { cursor: pointer; width: 16px; height: 16px; margin: 0; }
-
-    /* スコア入力テーブル */
-    .sp-gen__score-container { overflow-x: auto; padding-bottom: 5px; min-height: 110px; }
-    .sp-gen__score-table { width: 100%; border-collapse: collapse; min-width: 450px; }
-    .sp-gen__score-table th { font-size: 11px; font-weight: bold; color: #666; padding: 6px; background: #f9f9f9; border: 1px solid #eee; }
-    .sp-gen__score-table td { border: 1px solid #eee; padding: 4px; text-align: center; }
-    
-    .sp-gen__input, .sp-gen__textarea {
-      width: 100%;
-      border: 1px solid rgba(0,0,0,.14);
-      border-radius: 8px;
-      padding: 8px;
-      font-size: 14px;
-      background: #fff;
-      box-sizing: border-box;
-    }
-    .sp-gen__input--center { text-align: center; padding: 6px 2px; }
-    
-    /* デフォルトの「0」などの文字色を灰色にする設定 */
-    .sp-gen__input--default { color: #aaaaaa !important; }
-    
-    /* 早大固定マスのスタイル（エンジ色・編集不可） */
-    .sp-gen__input--readonly { background: #f5f5f5 !important; font-weight: bold; color: #800000 !important; pointer-events: none; }
-    .sp-gen__textarea { min-height: 150px; resize: vertical; }
-
-    .sp-gen__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 2px; }
-    .sp-gen__btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 10px 14px; border-radius: 12px; text-decoration: none;
-      font-weight: 900; font-size: 14px; border: 1px solid rgba(0,0,0,.10);
-      background: rgba(0,0,0,.92); color: #fff; cursor: pointer;
-    }
-    .sp-gen__btn--ghost { background: transparent; color: inherit; }
-    .sp-gen__btn:active { transform: translateY(1px); }
-
-    /* 下部出力・プレビューエリア */
-    .sp-gen__out-area { border-top: 2px dashed rgba(0,0,0,.1); padding-top: 20px; display: flex; flex-direction: column; gap: 14px; }
-    .sp-gen__outlabel { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .sp-gen__status { font-size: 12px; opacity: .75; margin: 0; }
-
-    /* プレビュー表示用スタイル */
-    .sp-preview { border: 1px dashed rgba(0,0,0,.18); border-radius: 14px; padding: 12px; background: rgba(0,0,0,.02); }
-    .sp-preview__label { font-size: 12px; font-weight: 900; opacity: .8; margin: 0 0 8px; }
-    .sp-preview__box { border: 1px solid rgba(0,0,0,.10); border-radius: 14px; background: #fff; padding: 14px; }
-    
-    .sp-preview__box .scorers { font-size: 14px; line-height: 1.6; color: #333; }
-    .sp-preview__box .baseball-runs { display: flex; align-items: center; justify-content: center; gap: 15px; font-size: 20px; font-weight: bold; margin-bottom: 15px; }
-    .sp-preview__box .table-container { overflow-x: auto; margin-bottom: 15px; }
-    .sp-preview__box .baseball-score-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
-    .sp-preview__box .baseball-score-table th, .sp-preview__box .baseball-score-table td { border: 1px solid #ccc; padding: 6px; }
-    .sp-preview__box .baseball-score-table th { background: #f5f5f5; }
-    .sp-preview__box .waseda { color: #800000; }
-    .sp-preview__box p { margin: 0 0 4px; }
-    .sp-preview__box .half { margin-top: 10px; font-weight: bold; color: #555; }
   </style>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <header class="sp-gen__head">
   <h1>野球型競技　スコア出力装置</h1>
-  <p class="sp-gen__desc">ランニングスコアの初期値は「0（灰色表示）」です。数値を入力するとリアルタイムでHTMLコードが更新されます。</p>
+  <p class="sp-gen__desc">ランニングスコアの初期値は０です。数値を入力するとリアルタイムでHTMLコードが更新されます。詳しい使い方はこちらをご覧ください。</p>
 </header>
 
 <section class="sp-gen" aria-label="野球スコアHTML 出力装置">
