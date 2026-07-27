@@ -29,7 +29,7 @@
 <body>
 <header class="sp-gen__head">
   <h1>野球型競技 スコア出力装置</h1>
-  <p class="sp-gen__desc">ランニングスコアの初期値は０です。数値を入力するとリアルタイムでHTMLコードが更新されます。詳しい使い方は,<a href="./explanation.html">こちら</a>をご覧ください。</p>
+  <p class="sp-gen__desc">数値を入力するとリアルタイムでHTMLコードが更新されます。</p>
 </header>
 
 <section class="sp-gen" aria-label="野球スコアHTML 出力装置">
@@ -72,8 +72,10 @@
               <thead id="input_thead"></thead>
               <tbody id="input_tbody"></tbody>
             </table>
+            <p class="sp-gen__desc">数値を半角で入力すると合計が自動計算されます。空欄は０として計算されます。</p>
           </div>
         </div>
+
 
         <div class="sp-gen__row">
           <div class="sp-gen__label">◆バッテリー</div>
@@ -113,7 +115,9 @@
         <div class="sp-gen__actions">
           <button class="sp-gen__btn" id="btn_copy" type="button">コードをコピー</button>
           <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_select" type="button">全選択</button>
+          <p class="sp-gen__desc">コードはカスタムHTMLなどに貼り付けてください。</p>
         </div>
+        
 
         <div class="sp-preview">
           <p class="sp-gen__label" style="color: #2e7d32;">【簡易プレビュー】</p>
