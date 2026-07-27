@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【試合後】字起こしタグツール</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* PC表示時に「入力欄」と「出力・プレビュー欄」を横並びにするレイアウト設定 */
+    @media screen and (min-width: 851px) {
+      .sp-gen__body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .sp-gen__out-area {
+        border-top: none;
+        padding-top: 0;
+        border-left: 2px dashed rgba(0,0,0,.1);
+        padding-left: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+<header class="sp-gen__head">
+  <h1>【試合後】字起こしタグツール</h1>
+  <p class="sp-gen__desc">選手名や質問・回答を入力すると、リアルタイムでタグ付きのHTMLコードが生成されます。</p>
+</header>
+
+<section class="sp-gen" aria-label="字起こしタグツール">
+  <div class="sp-gen__wrap">
+    <div class="sp-gen__body">
+      <!-- 左側：入力エリア -->
+      <div class="sp-gen__grid">
+        
+        <!-- 選手名入力 -->
+        <div class="sp-gen__row">
+          <div class="sp-gen__label">◆ 選手名（学部学年＝出身校）</div>
+          <input class="sp-gen__input" id="id_name" placeholder="例：早稲田太郎（スポ４＝東京・早稲田）">
+        </div>
+
+        <hr style="border: 0; border-top: 1px dashed rgba(0,0,0,.1); margin: 5px 0;">
+
+        <!-- 質問・回答の動的コンテナ -->
+        <div id="qa_container" style="display: flex; flex-direction: column; gap: 14px;"></div>
+
+        <!-- 質問の追加・削除操作ボタン -->
+        <div class="sp-gen__actions" style="margin-top: 5px;">
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_qa" type="button" style="border-color: #0066cc; background-color: #0066cc; color: #fff;">＋ 質問を追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_remove_qa" type="button" style="border-color: #cc0000; background-color: #cc0000; color: #fff;">－ 最後の質問を削除</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px dashed rgba(0,0,0,.1); margin: 5px 0;">
+
+        <div class="sp-gen__actions">
+          <button class="sp-gen__btn" id="btn_gen" type="button">コード生成</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear" type="button">クリア</button>
+        </div>
+      </div>
+
+      <!-- 右側：出力エリア -->
+      <div class="sp-gen__out-area">
+        <div class="sp-gen__outlabel">
+          <div class="sp-gen__label" style="color: #0066cc;">【出力コード】</div>
+          <p class="sp-gen__status" id="status">未生成</p>
+        </div>
+
+        <textarea class="sp-gen__textarea" id="out" placeholder="ここに生成されたHTMLコードが出力されます" readonly style="min-height: 180px;"></textarea>
+
+        <div class="sp-gen__actions">
+          <button class="sp-gen__btn" id="btn_copy" type="button">コードをコピー</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_select" type="button">全選択</button>
+        </div>
+
+        <div class="sp-preview" style="margin-top: 15px;">
+          <p class="sp-gen__label" style="color: #2e7d32;">【簡易プレビュー】</p>
+          <div class="sp-preview__box" id="preview" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var qaCount = 0; // 現在の質問数
+
+      function esc(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      }
+      
+      function v(id){ 
+        var el = document.getElementById(id);
+        return el ? el.value.trim() : ""; 
+      }
+
+      function formatAnswer(text) {
+        return esc(text).replace(/\r\n|\r|\n/g, '<br>');
+      }
+
+      // 質問・回答入力セットを1つ追加する関数
+      function addQARow(qVal, aVal) {
+        qaCount++;
+        var container = document.getElementById("qa_container");
+        if (!container) return;
+
+        var rowDiv = document.createElement("div");
+        rowDiv.className = "sp-gen__row qa-row";
+        rowDiv.id = "qa_row_" + qaCount;
+
+        rowDiv.innerHTML = 
+          '<div class="sp-gen__label">質問 ' + qaCount + '</div>' +
+          '<input class="sp-gen__input" id="id_q' + qaCount + '" placeholder="質問文を入力" value="' + esc(qVal || "") + '">' +
+          '<div class="sp-gen__label" style="margin-top: 6px;">答え ' + qaCount + '</div>' +
+          '<textarea class="sp-gen__textarea" id="id_a' + qaCount + '" style="min-height: 80px;" placeholder="回答文を入力">' + esc(aVal || "") + '</textarea>';
+
+        container.appendChild(rowDiv);
+
+        // 追加した入力欄にリアルタイム更新イベントを紐付け
+        var qEl = document.getElementById("id_q" + qaCount);
+        var aEl = document.getElementById("id_a" + qaCount);
+        if (qEl) qEl.addEventListener("input", build);
+        if (aEl) aEl.addEventListener("input", build);
+      }
+
+      // 最後の質問・回答セットを削除する関数
+      function removeQARow() {
+        if (qaCount <= 1) return; // 最低1つは残す
+        var row = document.getElementById("qa_row_" + qaCount);
+        if (row) {
+          row.remove();
+          qaCount--;
+          build();
+        }
+      }
+
+      function build(){
+        var name = v("id_name");
+        var htmlParts = [];
+
+        // 名前を <h4> タグに変更
+        if (name) {
+          htmlParts.push('<h4>◆' + esc(name) + '</h4>');
+        }
+
+        // 動的に存在する数（qaCount）だけループ処理
+        for (var i = 1; i <= qaCount; i++) {
+          var q = v("id_q" + i);
+          var a = v("id_a" + i);
+
+          if (q || a) {
+            var itemHtml = '<p class="question"><strong>ーー' + esc(q) + '</strong></p>\n';
+            // 回答の冒頭に全角スペース「 」を出力
+            itemHtml += '<p class="answer">　' + formatAnswer(a) + '</p>';
+            htmlParts.push(itemHtml);
+          }
+        }
+
+        var fullHtml = htmlParts.join('\n\n');
+
+        var outEl = document.getElementById("out");
+        var previewEl = document.getElementById("preview");
+        var statusEl = document.getElementById("status");
+
+        if (outEl) outEl.value = fullHtml;
+        if (previewEl) previewEl.innerHTML = fullHtml;
+        if (statusEl) statusEl.textContent = fullHtml ? "生成OK" : "未生成";
+      }
+
+      function clearAll() {
+        document.getElementById("id_name").value = "";
+        
+        var container = document.getElementById("qa_container");
+        if (container) container.innerHTML = "";
+        qaCount = 0;
+        
+        // 初期状態として質問欄を3個生成
+        for (var i = 0; i < 5; i++) {
+          addQARow();
+        }
+        
+        build();
+      }
+
+      async function copyOut(){
+        var t = document.getElementById("out");
+        var statusEl = document.getElementById("status");
+        if(!t || !t.value){ if(statusEl) statusEl.textContent = "出力が空です"; return; }
+        
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(t.value);
+            if(statusEl) statusEl.textContent = "コピーしました";
+            return;
+          } catch(e) {}
+        }
+        t.focus(); t.select();
+        try {
+          document.execCommand('copy');
+          if(statusEl) statusEl.textContent = "コピーしました";
+        } catch (err) {
+          if(statusEl) statusEl.textContent = "選択しました（手動コピー）";
+        }
+      }
+
+      function selectOut(){
+        var t = document.getElementById("out");
+        var statusEl = document.getElementById("status");
+        if(!t || !t.value){ if(statusEl) statusEl.textContent = "出力が空です"; return; }
+        t.focus(); t.select();
+        if(statusEl) statusEl.textContent = "選択しました";
+      }
+
+      function init() {
+        var nameEl = document.getElementById("id_name");
+        if (nameEl) nameEl.addEventListener("input", build);
+
+        var btnAddQA = document.getElementById("btn_add_qa");
+        var btnRemoveQA = document.getElementById("btn_remove_qa");
+        var btnGen = document.getElementById("btn_gen");
+        var btnClear = document.getElementById("btn_clear");
+        var btnCopy = document.getElementById("btn_copy");
+        var btnSelect = document.getElementById("btn_select");
+
+        if (btnAddQA) {
+          btnAddQA.addEventListener("click", function() {
+            addQARow();
+            build();
+          });
+        }
+        if (btnRemoveQA) btnRemoveQA.addEventListener("click", removeQARow);
+        if (btnGen) btnGen.addEventListener("click", build);
+        if (btnClear) btnClear.addEventListener("click", clearAll);
+        if (btnCopy) btnCopy.addEventListener("click", copyOut);
+        if (btnSelect) btnSelect.addEventListener("click", selectOut);
+
+        // 初期表示時：質問・回答セットをデフォルトで3つ生成
+        for (var i = 0; i < 3; i++) {
+          addQARow();
+        }
+
+        build();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</section>
+
+</body>
+</html>
