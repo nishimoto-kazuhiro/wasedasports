@@ -1,31 +1,9 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>字起こしタグツール（見出し対応版）</title>
-  <link rel="icon" href="../favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="../css/style.css">
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    /* PC表示時に「入力欄」と「出力・プレビュー欄」を横並びにするレイアウト設定 */
-    @media screen and (min-width: 851px) {
-      .sp-gen__body {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        align-items: start;
-      }
-      .sp-gen__out-area {
-        border-top: none;
-        padding-top: 0;
-        border-left: 2px dashed rgba(0,0,0,.1);
-        padding-left: 24px;
-      }
-    }
-  </style>
-</head>
-<body>
+---
+layout: default
+title: 対談字起こしツール
+---
+
+<main>
 <header class="sp-gen__head">
   <h1>字起こしタグツール（見出し・リード文対応）</h1>
   <p class="sp-gen__desc">リード文、取材日、取材形式、見出し（h3）、質問・回答、選手プロフィールを入力すると、リアルタイムでHTMLコードが生成されます。</p>
@@ -401,6 +379,4 @@
     })();
   </script>
 </section>
-
-</body>
-</html>
+</main>
