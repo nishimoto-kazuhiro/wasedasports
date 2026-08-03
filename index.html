@@ -11,43 +11,63 @@ title: ホーム
   <p><a href="{{ site.baseurl}}/taidan/">対談字起こし</a></p>
   <p><a href="{{ site.baseurl}}/runs/">野球スコア作成ツール</a></p>
 
-  <a href="{{ site.baseurl}}/runs/"><div class="l-wrapper_06">
-    <div class="card_06">
-      <div class="card-imgcontainer_06"><img class="card-img_06" src="{{ site.baseurl }}/assets/images/baseball_icon.png" alt=""></div>
-      <div class="card-content_06">
-        <p class="card-title_06">【野球】スコアボード</p>
-        <p class="card-text_06">野球、ソフトボールのランニングスコアを作成するツール。</p>
+  <div class="card-container">
+    <a href="{{ site.baseurl}}/runs/"><div class="l-wrapper_06">
+      <div class="card_06">
+        <div class="card-imgcontainer_06"><img class="card-img_06" src="{{ site.baseurl }}/assets/images/baseball_icon.png" alt=""></div>
+        <div class="card-content_06">
+          <p class="card-title_06">【野球】スコアボード</p>
+          <p class="card-text_06">野球、ソフトボールのランニングスコアを作成するツール。</p>
+        </div>
       </div>
-    </div>
-  </div></a>
+    </div></a>
 
     <a href="{{ site.baseurl}}/runs/"><div class="l-wrapper_06">
-    <div class="card_06">
-      <div class="card-imgcontainer_06"><img class="card-img_06" src="{{ site.baseurl }}/assets/images/baseball_icon.png" alt=""></div>
-      <div class="card-content_06">
-        <p class="card-title_06">【野球】スコアボード</p>
-        <p class="card-text_06">野球、ソフトボールのランニングスコアを作成するツール。</p>
+      <div class="card_06">
+        <div class="card-imgcontainer_06"><img class="card-img_06" src="{{ site.baseurl }}/assets/images/baseball_icon.png" alt=""></div>
+        <div class="card-content_06">
+          <p class="card-title_06">【野球】スコアボード</p>
+          <p class="card-text_06">野球、ソフトボールのランニングスコアを作成するツール。</p>
+        </div>
       </div>
-    </div>
-  </div></a>
+    </div></a>
 
     <a href="{{ site.baseurl}}/runs/"><div class="l-wrapper_06">
-    <div class="card_06">
-      <div class="card-imgcontainer_06"><img class="card-img_06" src="{{ site.baseurl }}/assets/images/baseball_icon.png" alt=""></div>
-      <div class="card-content_06">
-        <p class="card-title_06">【野球】スコアボード</p>
-        <p class="card-text_06">野球、ソフトボールのランニングスコアを作成するツール。</p>
+      <div class="card_06">
+        <div class="card-imgcontainer_06"><img class="card-img_06" src="{{ site.baseurl }}/assets/images/baseball_icon.png" alt=""></div>
+        <div class="card-content_06">
+          <p class="card-title_06">【野球】スコアボード</p>
+          <p class="card-text_06">野球、ソフトボールのランニングスコアを作成するツール。</p>
+        </div>
       </div>
-    </div>
-  </div></a>
+    </div></a>
+
+  </div>
+
 </body>
 <style>
   /*--------------------------------------
   カード型_06
 --------------------------------------*/
+.card-container{
+  display: flex;
+  justify-content: center; /* カードを中央寄せ（両端揃えなら space-between など） */
+  gap: 20px;               /* カード同士の間隔 */
+  flex-wrap: wrap;         /* 画面が狭くなった時に自動で折り返す */
+  max-width: 1200px;       /* コンテナ全体の最大幅 */
+  margin: 0 auto;
+}
+
+/* 追加：aタグの装飾をリセット */
+.card-container a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
 .l-wrapper_06 {
   margin: 1rem auto;
-  width: 40%;
+  width: 30%;
 }
 
 .l-wrapper_06:hover {
