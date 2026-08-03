@@ -1,9 +1,32 @@
----
-layout: default
-title: 試合字起こし
----
-
-<main>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>【試合後】字起こしタグツール</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* PC表示時に「入力欄」と「出力・プレビュー欄」を横並びにするレイアウト設定 */
+    @media screen and (min-width: 851px) {
+      .sp-gen__body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .sp-gen__out-area {
+        border-top: none;
+        padding-top: 0;
+        border-left: 2px dashed rgba(0,0,0,.1);
+        padding-left: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
 <header class="sp-gen__head">
   <h1>【試合後】字起こしタグツール</h1>
   <p class="sp-gen__desc">選手名や質問・回答を入力すると、リアルタイムでタグ付きのHTMLコードが生成されます。</p>
@@ -235,5 +258,6 @@ title: 試合字起こし
     })();
   </script>
 </section>
-</main>
 
+</body>
+</html>

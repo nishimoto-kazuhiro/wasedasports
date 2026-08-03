@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>野球スコアHTML 出力装置</title>
+  <link rel="icon" href="../favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* PC表示時に「入力欄」と「出力・プレビュー欄」を横並びにするレイアウト設定 */
+    @media screen and (min-width: 851px) {
+      .sp-gen__body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .sp-gen__out-area {
+        border-top: none;
+        padding-top: 0;
+        border-left: 2px dashed rgba(0,0,0,.1);
+        padding-left: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+<header class="sp-gen__head">
+  <h1>野球型競技 スコア出力装置</h1>
+  <p class="sp-gen__desc">数値を入力するとリアルタイムでHTMLコードが更新されます。</p>
+</header>
+
+<section class="sp-gen" aria-label="野球スコアHTML 出力装置">
+  <div class="sp-gen__wrap">
+    <div class="sp-gen__body">
+      <!-- 左側：入力グリッド -->
+      <div class="sp-gen__grid">
+        
+        <!-- 設定エリア -->
+        <div class="sp-gen__config-wrap">
+          <div class="sp-gen__config-item">
+            <div class="sp-gen__label">イニング数：</div>
+            <input type="number" class="sp-gen__input sp-gen__input-num" id="inning_num" value="9" min="1" max="30">
+          </div>
+          
+          <div class="sp-gen__config-item">
+            <label class="sp-gen__radio-label" style="color: #800000;">
+              <input type="checkbox" id="is_waseda_mode" class="sp-gen__radio-input" checked> 早大固定モード
+            </label>
+          </div>
+
+          <div class="sp-gen__config-item" id="waseda_side_wrap">
+            <div class="sp-gen__label">早大の攻撃：</div>
+            <div class="sp-gen__radio-group">
+              <label class="sp-gen__radio-label">
+                <input type="radio" name="waseda_side" class="sp-gen__radio-input" value="top" checked> 先攻（表）
+              </label>
+              <label class="sp-gen__radio-label">
+                <input type="radio" name="waseda_side" class="sp-gen__radio-input" value="bottom"> 後攻（裏）
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- ランニングスコア入力テーブル -->
+        <div class="sp-gen__row">
+          <div class="sp-gen__label">ランニングスコア入力</div>
+          <div class="sp-gen__score-container">
+            <table class="sp-gen__score-table">
+              <thead id="input_thead"></thead>
+              <tbody id="input_tbody"></tbody>
+            </table>
+            <p class="sp-gen__desc">数値を半角で入力すると合計が自動計算されます。空欄は０として計算されます。</p>
+          </div>
+        </div>
+
+
+        <div class="sp-gen__row">
+          <div class="sp-gen__label">◆バッテリー</div>
+          <input class="sp-gen__input" id="battery" placeholder="例：◯伊藤樹、田和ー吉田瑞">
+        </div>
+
+        <div class="sp-gen__row">
+          <div class="sp-gen__label">◆二塁打</div>
+          <input class="sp-gen__input" id="double" placeholder="例：前田健">
+        </div>
+
+        <div class="sp-gen__row">
+          <div class="sp-gen__label">◆三塁打</div>
+          <input class="sp-gen__input" id="triple" placeholder="例：なし">
+        </div>
+
+        <div class="sp-gen__row">
+          <div class="sp-gen__label">◆本塁打</div>
+          <input class="sp-gen__input" id="homerun" placeholder="例：寺尾（４回ソロ）">
+        </div>
+
+        <div class="sp-gen__actions">
+          <button class="sp-gen__btn" id="btn_gen" type="button">コード生成</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear" type="button">クリア</button>
+        </div>
+      </div>
+
+      <!-- 右側：出力エリア -->
+      <div class="sp-gen__out-area">
+        <div class="sp-gen__outlabel">
+          <div class="sp-gen__label" style="color: #0066cc;">【出力コード】</div>
+          <p class="sp-gen__status" id="status">未生成</p>
+        </div>
+
+        <textarea class="sp-gen__textarea" id="out" placeholder="ここにコードが出ます" readonly style="min-height: 180px;"></textarea>
+
+        <div class="sp-gen__actions">
+          <button class="sp-gen__btn" id="btn_copy" type="button">コードをコピー</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_select" type="button">全選択</button>
+          <p class="sp-gen__desc">コードはカスタムHTMLなどに貼り付けてください。</p>
+        </div>
+        
+
+        <div class="sp-preview">
+          <p class="sp-gen__label" style="color: #2e7d32;">【簡易プレビュー】</p>
+          <div class="sp-preview__box" id="preview"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      function toKanjiNum(n) {
+        var kanjis = ["", "１", "２", "３", "４", "５", "６", "７", "８", "９", "１０"];
+        if (n <= 10) return kanjis[n];
+        if (n < 20) return "１" + kanjis[n - 10];
+        return n;
+      }
+
+      function esc(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      }
+      function v(id){ return document.getElementById(id) ? document.getElementById(id).value.trim() : ""; }
+      
+      function getRadioValue(name) {
+        var el = document.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : "top";
+      }
+
+      function toggleWasedaDisplay() {
+        var isWaseda = document.getElementById("is_waseda_mode").checked;
+        var sideWrap = document.getElementById("waseda_side_wrap");
+        if (sideWrap) {
+          sideWrap.style.display = isWaseda ? "flex" : "none";
+        }
+        renderInputTable();
+      }
+
+      function renderInputTable() {
+        var maxInning = parseInt(document.getElementById("inning_num").value);
+        if (isNaN(maxInning) || maxInning < 1) maxInning = 9;
+        
+        var isWaseda = document.getElementById("is_waseda_mode").checked;
+        var side = getRadioValue("waseda_side");
+        
+        var thead = document.getElementById("input_thead");
+        var tbody = document.getElementById("input_tbody");
+        if (!thead || !tbody) return;
+
+        var oldT1Name = v("t1_name") || "";
+        var oldT2Name = v("t2_name") || "";
+        var oldT1Vals = {}, oldT2Vals = {};
+        for(var i=1; i<=30; i++) {
+          if(document.getElementById("t1_" + i)) oldT1Vals[i] = v("t1_" + i);
+          if(document.getElementById("t2_" + i)) oldT2Vals[i] = v("t2_" + i);
+        }
+
+        var headHtml = '<tr><th style="width:80px;">TEAM</th>';
+        for(var i=1; i<=maxInning; i++) { headHtml += '<th>' + i + '</th>'; }
+        headHtml += '<th style="width:45px;">計</th></tr>';
+        thead.innerHTML = headHtml;
+
+        var t1Html = "", t2Html = "";
+
+        if (isWaseda) {
+          if (side === "top") {
+            t1Html = '<td><input class="sp-gen__input sp-gen__input--center sp-gen__input--readonly" id="t1_name" value="早大" readonly></td>';
+            t2Html = '<td><input class="sp-gen__input sp-gen__input--center" id="t2_name" value="' + esc(oldT2Name === "早大" ? "" : oldT2Name) + '" placeholder="対戦相手"></td>';
+          } else {
+            t1Html = '<td><input class="sp-gen__input sp-gen__input--center" id="t1_name" value="' + esc(oldT1Name === "早大" ? "" : oldT1Name) + '" placeholder="対戦相手"></td>';
+            t2Html = '<td><input class="sp-gen__input sp-gen__input--center" id="sp-waseda-fixed-marker" value="早大" readonly></td>';
+          }
+        } else {
+          t1Html = '<td><input class="sp-gen__input sp-gen__input--center" id="t1_name" value="' + esc(oldT1Name) + '" placeholder="先攻チーム"></td>';
+          t2Html = '<td><input class="sp-gen__input sp-gen__input--center" id="t2_name" value="' + esc(oldT2Name) + '" placeholder="後攻チーム"></td>';
+        }
+
+        for(var i=1; i<=maxInning; i++) {
+          var v1 = "0";
+          if (oldT1Vals[i] !== undefined) {
+            if (oldT1Vals[i] !== "") { v1 = oldT1Vals[i]; }
+          }
+          var v2 = "0";
+          if (oldT2Vals[i] !== undefined) {
+            if (oldT2Vals[i] !== "") { v2 = oldT2Vals[i]; }
+          }
+          t1Html += '<td><input class="sp-gen__input sp-gen__input--center" id="t1_' + i + '" value="' + esc(v1) + '"></td>';
+          t2Html += '<td><input class="sp-gen__input sp-gen__input--center" id="t2_' + i + '" value="' + esc(v2) + '"></td>';
+        }
+        t1Html += '<td id="t1_total" style="font-weight:bold; font-size:13px;">0</td>';
+        t2Html += '<td id="t2_total" style="font-weight:bold; font-size:13px;">0</td>';
+
+        tbody.innerHTML = '<tr>' + t1Html + '</tr><tr>' + t2Html + '</tr>';
+
+        if (isWaseda) {
+          if (side === "bottom") {
+            var marker = document.getElementById("sp-waseda-fixed-marker");
+            if(marker) {
+              marker.id = "t2_name";
+              marker.classList.add("sp-gen__input--readonly");
+            }
+          }
+        }
+
+        checkZeroColors();
+        bindEvents();
+        build();
+      }
+
+      // 「0」の値を灰色表示にするスタイル判定関数
+      function checkZeroColors() {
+        var maxInning = parseInt(document.getElementById("inning_num").value);
+        if (isNaN(maxInning) || maxInning < 1) maxInning = 9;
+        
+        for(var i=1; i<=maxInning; i++) {
+          var prefixes = ["t1_", "t2_"];
+          for(var p=0; p<prefixes.length; p++) {
+            var el = document.getElementById(prefixes[p] + i);
+            if (el) {
+              if (el.value === "0") {
+                el.classList.add("sp-gen__input--default");
+              } else {
+                el.classList.remove("sp-gen__input--default");
+              }
+            }
+          }
+        }
+      }
+
+      function build(){
+        var maxInning = parseInt(document.getElementById("inning_num").value);
+        if (isNaN(maxInning) || maxInning < 1) maxInning = 9;
+
+        var isWaseda = document.getElementById("is_waseda_mode").checked;
+        var side = getRadioValue("waseda_side");
+        
+        var d1 = "先攻";
+        if (isWaseda) { if (side === "top") { d1 = "早大"; } }
+        var t1Name = v("t1_name") || d1;
+
+        var d2 = "後攻";
+        if (isWaseda) { if (side === "bottom") { d2 = "早大"; } }
+        var t2Name = v("t2_name") || d2;
+
+        var t1Sum = 0, t2Sum = 0;
+        var t1Scores = [], t2Scores = [];
+
+        for(var i=1; i<=maxInning; i++) {
+          var s1 = v("t1_" + i);
+          var s2 = v("t2_" + i);
+          t1Scores.push(s1);
+          t2Scores.push(s2);
+
+          if(!isNaN(parseInt(s1))) t1Sum += parseInt(s1);
+          if(!isNaN(parseInt(s2))) t2Sum += parseInt(s2);
+        }
+
+        if(document.getElementById("t1_total")) document.getElementById("t1_total").textContent = t1Sum;
+        if(document.getElementById("t2_total")) document.getElementById("t2_total").textContent = t2Sum;
+
+        var leftTeam, rightTeam, leftScore, rightScore;
+        if (isWaseda) {
+          leftTeam = "早大";
+          rightTeam = (side === "top") ? t2Name : t1Name;
+          leftScore = (side === "top") ? t1Sum : t2Sum;
+          rightScore = (side === "top") ? t2Sum : t1Sum;
+        } else {
+          leftTeam = t1Name;
+          rightTeam = t2Name;
+          leftScore = t1Sum;
+          rightScore = t2Sum;
+        }
+
+        var runsHtml = '<div class="baseball-runs">\n  <div class="baseball-runs-team">' + esc(leftTeam) + '</div>\n  <div class="baseball-runs-score">' + leftScore + '－' + rightScore + '</div>\n  <div class="baseball-runs-team">' + esc(rightTeam) + '</div>\n</div>';
+
+        var tableHtml = '<div class="table-container">\n  <table class="baseball-score-table">\n    <tbody>\n      <tr>\n        <th>TEAM</th>\n        ';
+        for(var i=1; i<=maxInning; i++) { tableHtml += '<th>' + toKanjiNum(i) + '</th>'; }
+        tableHtml += '<th>合計</th>\n      </tr>';
+        
+        var t1Class = "";
+        if (isWaseda) { if (t1Name === "早大") { t1Class = ' class="waseda"'; } }
+        var t2Class = "";
+        if (isWaseda) { if (t2Name === "早大") { t2Class = ' class="waseda"'; } }
+
+        tableHtml += '\n      <tr>\n        <td' + t1Class + '><strong>' + esc(t1Name) + '</strong></td>\n        <td>' + t1Scores.join('</td>\n        <td>') + '</td>\n        <td>' + t1Sum + '</td>\n      </tr>';
+        tableHtml += '\n      <tr>\n        <td' + t2Class + '><strong>' + esc(t2Name) + '</strong></td>\n        <td>' + t2Scores.join('</td>\n        <td>') + '</td>\n        <td>' + t2Sum + '</td>\n      </tr>';
+        tableHtml += '\n    </tbody>\n  </table>\n</div>';
+
+        function createBlock(label, val) {
+          if (!val || val === "なし") return '\n<p class="half">◆' + label + '</p>\n<p>なし</p>';
+          return '\n<p class="half">◆' + label + '</p>\n<p>' + esc(val) + '</p>';
+        }
+
+        var batteryHtml = createBlock("バッテリー", v("battery"));
+        var doubleHtml = createBlock("二塁打", v("double"));
+        var tripleHtml = createBlock("三塁打", v("triple"));
+        var homerunHtml = createBlock("本塁打", v("homerun"));
+
+        var html = '<div class="scorers">\n' + runsHtml + '\n' + tableHtml + batteryHtml + doubleHtml + tripleHtml + homerunHtml + '\n</div>';
+
+        if(document.getElementById("out")) document.getElementById("out").value = html;
+        if(document.getElementById("preview")) document.getElementById("preview").innerHTML = html;
+        if(document.getElementById("status")) document.getElementById("status").textContent = "生成OK";
+      }
+
+      function bindEvents() {
+        var maxInning = parseInt(document.getElementById("inning_num").value);
+        if (isNaN(maxInning) || maxInning < 1) maxInning = 9;
+
+        var targetIds = ["t1_name", "t2_name"];
+        for(var i=1; i<=maxInning; i++) {
+          targetIds.push("t1_" + i);
+          targetIds.push("t2_" + i);
+        }
+        targetIds.forEach(function(id) {
+          var el = document.getElementById(id);
+          if(el) {
+            el.removeEventListener("input", build);
+            el.removeEventListener("input", checkZeroColors);
+            el.addEventListener("input", build);
+            el.addEventListener("input", checkZeroColors);
+          }
+        });
+      }
+
+      function clearAll() {
+        document.getElementById("inning_num").value = "9";
+        document.getElementById("is_waseda_mode").checked = true;
+        var topRadio = document.querySelector('input[name="waseda_side"][value="top"]');
+        if(topRadio) topRadio.checked = true;
+        document.getElementById("battery").value = "";
+        document.getElementById("double").value = "";
+        document.getElementById("triple").value = "";
+        document.getElementById("homerun").value = "";
+        toggleWasedaDisplay();
+      }
+
+      async function copyOut(){
+        var t = document.getElementById("out");
+        if(!t || !t.value){ document.getElementById("status").textContent = "出力が空です"; return; }
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(t.value);
+            document.getElementById("status").textContent = "コピーしました";
+            return;
+          } catch(e) {}
+        }
+        t.focus(); t.select();
+        try {
+          document.execCommand('copy');
+          document.getElementById("status").textContent = "コピーしました";
+        } catch (err) {
+          document.getElementById("status").textContent = "選択しました（手動コピー）";
+        }
+      }
+
+      function selectOut(){
+        var t = document.getElementById("out");
+        if(!t || !t.value){ document.getElementById("status").textContent = "出力が空です"; return; }
+        t.focus(); t.select();
+        document.getElementById("status").textContent = "選択しました";
+      }
+
+      function init() {
+        var numEl = document.getElementById("inning_num");
+        var modeEl = document.getElementById("is_waseda_mode");
+        if (!numEl || !modeEl) return;
+
+        numEl.addEventListener("input", renderInputTable);
+        modeEl.addEventListener("change", toggleWasedaDisplay);
+        
+        var radios = document.querySelectorAll('input[name="waseda_side"]');
+        for(var r=0; r<radios.length; r++) {
+          radios[r].addEventListener("change", renderInputTable);
+        }
+
+        document.getElementById("battery").addEventListener("input", build);
+        document.getElementById("double").addEventListener("input", build);
+        document.getElementById("triple").addEventListener("input", build);
+        document.getElementById("homerun").addEventListener("input", build);
+        
+        document.getElementById("btn_gen").addEventListener("click", build);
+        document.getElementById("btn_clear").addEventListener("click", clearAll);
+        document.getElementById("btn_copy").addEventListener("click", copyOut);
+        document.getElementById("btn_select").addEventListener("click", selectOut);
+
+        toggleWasedaDisplay();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</section>
+
+</body>
+</html>
