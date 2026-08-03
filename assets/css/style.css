@@ -277,3 +277,19 @@
     .sp-gen__out-area { border-top: 2px dashed rgba(0,0,0,.1); padding-top: 20px; display: flex; flex-direction: column; gap: 14px; }
     .sp-gen__outlabel { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .sp-gen__status { font-size: 12px; opacity: .75; margin: 0; }
+
+        /* PC表示時に「入力欄」と「出力・プレビュー欄」を横並びにするレイアウト設定 */
+    @media screen and (min-width: 851px) {
+      .sp-gen__body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      .sp-gen__out-area {
+        border-top: none;
+        padding-top: 0;
+        border-left: 2px dashed rgba(0,0,0,.1);
+        padding-left: 24px;
+      }
+    }
