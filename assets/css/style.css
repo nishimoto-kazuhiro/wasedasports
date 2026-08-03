@@ -1,4 +1,10 @@
-    .table-container {
+body{
+    font-family: sans-serif;
+}
+
+
+
+.table-container {
         overflow-x: auto;
     }
 
