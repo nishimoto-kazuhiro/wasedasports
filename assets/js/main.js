@@ -1,5 +1,5 @@
 // =============================
-// ===ヘッダー用スクリプト=========
+// ===ヘッダー用スクリプト==========
 // =============================
 document.addEventListener('DOMContentLoaded', () => {
   const hamburger = document.getElementById('js-hamburger');
