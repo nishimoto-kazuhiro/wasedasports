@@ -293,4 +293,122 @@
         padding-left: 24px;
       }
     }
-    /* comment */
+
+
+/* ヘッダー用CSS */
+/* ==========================================
+   共通・ヘッダー固定設定
+   ========================================== */
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+/* ヘッダーの中身を横並びにする */
+.header-inner {
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ロゴのサイズ調整 */
+.header-logo img {
+  height: 32px;
+  width: auto;
+  display: block;
+}
+
+/* PC用ナビゲーション（標準：横並び） */
+.nav-menu {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-menu a {
+  text-decoration: none;
+  color: #333333;
+  font-weight: bold;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.nav-menu a:hover {
+  color: #007bff;
+}
+
+/* ハンバーガーボタン（デフォルトは非表示） */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 30px;
+  height: 24px;
+  position: relative;
+  z-index: 1010;
+}
+
+.hamburger span {
+  display: block;
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background-color: #333;
+  left: 0;
+  transition: all 0.3s ease;
+}
+
+.hamburger span:nth-child(1) { top: 0; }
+.hamburger span:nth-child(2) { top: 11px; }
+.hamburger span:nth-child(3) { bottom: 0; }
+
+/* ==========================================
+   レスポンシブ（スマホ表示：768px以下）
+   ========================================== */
+@media (max-width: 768px) {
+  /* ハンバーガーボタンを表示 */
+  .hamburger {
+    display: block;
+  }
+
+  /* ハンバーガー開閉時のアニメーション (×印に変化) */
+  .hamburger.is-active span:nth-child(1) {
+    transform: translateY(11px) rotate(45deg);
+  }
+  .hamburger.is-active span:nth-child(2) {
+    opacity: 0;
+  }
+  .hamburger.is-active span:nth-child(3) {
+    transform: translateY(-11px) rotate(-45deg);
+  }
+
+  /* ナビゲーションメニューを画面右上に格納 */
+  .nav-menu {
+    position: fixed;
+    top: 60px; /* ヘッダーの高さ分下げる */
+    right: -100%; /* 初期状態は画面外に隠す */
+    width: 250px;
+    height: calc(100vh - 60px);
+    background-color: #ffffff;
+    flex-direction: column;
+    padding: 30px 20px;
+    gap: 25px;
+    box-shadow: -2px 5px 10px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+  }
+
+  /* メニューが開いた時 */
+  .nav-menu.is-active {
+    right: 0;
+  }
+}
