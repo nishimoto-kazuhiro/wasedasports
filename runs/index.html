@@ -1,32 +1,9 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
-  <title>野球スコアHTML 出力装置</title>
-  <link rel="icon" href="../favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="../css/style.css">
-  <link rel="stylesheet" href="css/style.css">
-  <style>
-    /* PC表示時に「入力欄」と「出力・プレビュー欄」を横並びにするレイアウト設定 */
-    @media screen and (min-width: 851px) {
-      .sp-gen__body {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        align-items: start;
-      }
-      .sp-gen__out-area {
-        border-top: none;
-        padding-top: 0;
-        border-left: 2px dashed rgba(0,0,0,.1);
-        padding-left: 24px;
-      }
-    }
-  </style>
-</head>
-<body>
+---
+layout: default
+title: 野球型競技　スコア出力ツール
+---
+
+<main>
 <header class="sp-gen__head">
   <h1>野球型競技 スコア出力装置</h1>
   <p class="sp-gen__desc">数値を入力するとリアルタイムでHTMLコードが更新されます。</p>
@@ -416,6 +393,4 @@
     })();
   </script>
 </section>
-
-</body>
-</html>
+</main>
