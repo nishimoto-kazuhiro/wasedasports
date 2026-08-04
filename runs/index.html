@@ -174,11 +174,11 @@ title: 野球型競技　スコア出力ツール
         }
 
         for(var i=1; i<=maxInning; i++) {
-          var v1 = "0";
+          var v1 = "";
           if (oldT1Vals[i] !== undefined) {
             if (oldT1Vals[i] !== "") { v1 = oldT1Vals[i]; }
           }
-          var v2 = "0";
+          var v2 = "";
           if (oldT2Vals[i] !== undefined) {
             if (oldT2Vals[i] !== "") { v2 = oldT2Vals[i]; }
           }
@@ -246,11 +246,19 @@ title: 野球型競技　スコア出力ツール
         for(var i=1; i<=maxInning; i++) {
           var s1 = v("t1_" + i);
           var s2 = v("t2_" + i);
-          t1Scores.push(s1);
-          t2Scores.push(s2);
+          
+          // 空欄の場合は内部的に0として集計
+          var val1 = parseInt(s1, 10);
+          if (isNaN(val1)) val1 = 0;
+          t1Sum += val1;
 
-          if(!isNaN(parseInt(s1))) t1Sum += parseInt(s1);
-          if(!isNaN(parseInt(s2))) t2Sum += parseInt(s2);
+          var val2 = parseInt(s2, 10);
+          if (isNaN(val2)) val2 = 0;
+          t2Sum += val2;
+
+          // 生成されるHTMLのセルにはそのまま（空欄なら空欄のまま）を入れる
+          t1Scores.push(esc(s1));
+          t2Scores.push(esc(s2));
         }
 
         if(document.getElementById("t1_total")) document.getElementById("t1_total").textContent = t1Sum;
