@@ -37,3 +37,33 @@ document.addEventListener('DOMContentLoaded', () => {
   adjustMainPadding();
   window.addEventListener('resize', adjustMainPadding);
 });
+
+// 画面遷移警告
+document.addEventListener('DOMContentLoaded', () => {
+  let isInputChanged = false;
+
+  // 1. input や textarea などの入力変更を検知
+  const inputs = document.querySelectorAll('input, textarea, select');
+  inputs.forEach(input => {
+    input.addEventListener('input', () => {
+      isInputChanged = true; // 入力されたらフラグをオン
+    });
+  });
+
+  // 2. ページ離脱（リロードや遷移）の時に警告を表示
+  window.addEventListener('beforeunload', (event) => {
+    if (isInputChanged) {
+      // ブラウザに標準警告を出させるための必須処理
+      event.preventDefault();
+      event.returnValue = ''; // 一部のブラウザ（Chrome等）で必要
+    }
+  });
+
+  // 3. フォーム送信時（保存など）は警告を出さないようにする処理
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', () => {
+      isInputChanged = false; // 送信時はフラグをオフにして警告をスキップ
+    });
+  }
+});
