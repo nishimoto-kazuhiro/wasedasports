@@ -222,21 +222,19 @@ title: 野球型競技　スコア出力ツール
       var t1Scores = [], t2Scores = [];
 
       for(var i=1; i<=maxInning; i++) {
-        var s1 = v("t1_" + i);
-        var s2 = v("t2_" + i);
-        
-        // 空欄の場合は内部的に0として集計
-        var val1 = parseInt(s1, 10);
-        if (isNaN(val1)) val1 = 0;
-        t1Sum += val1;
+          var s1 = v("t1_" + i);
+          var s2 = v("t2_" + i);
+          
+          // 空欄("") または 数字以外の入力なら 0 に変換して足す
+          var val1 = (s1 === "" || isNaN(parseInt(s1, 10))) ? 0 : parseInt(s1, 10);
+          t1Sum += val1;
 
-        var val2 = parseInt(s2, 10);
-        if (isNaN(val2)) val2 = 0;
-        t2Sum += val2;
+          var val2 = (s2 === "" || isNaN(parseInt(s2, 10))) ? 0 : parseInt(s2, 10);
+          t2Sum += val2;
 
-        // 生成されるHTMLのセルにはそのまま（空欄なら空欄のまま、または入力値）を入れる
-        t1Scores.push(esc(s1));
-        t2Scores.push(esc(s2));
+          // 生成されるHTML用（空欄のままでOKならそのまま、出力時も0にしたい場合は val1 を入れる）
+          t1Scores.push(esc(s1));
+          t2Scores.push(esc(s2));
       }
 
       if(document.getElementById("t1_total")) document.getElementById("t1_total").textContent = t1Sum;
