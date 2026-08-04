@@ -6,6 +6,12 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
 }
 
+main {
+  padding-left: 20px;  /* 左側の余白 */
+  padding-right: 20px; /* 右側の余白 */
+  box-sizing: border-box; /* paddingを含めた幅計算にする */
+}
+
 
 .table-container {
         overflow-x: auto;
