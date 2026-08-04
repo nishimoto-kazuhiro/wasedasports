@@ -233,8 +233,8 @@ title: 野球型競技　スコア出力ツール
           t2Sum += val2;
 
           // 生成されるHTML用（空欄のままでOKならそのまま、出力時も0にしたい場合は val1 を入れる）
-          t1Scores.push(esc(s1));
-          t2Scores.push(esc(s2));
+          t1Scores.push(s1 === "" ? "0" : esc(s1));
+          t2Scores.push(s2 === "" ? "0" : esc(s2));
       }
 
       if(document.getElementById("t1_total")) document.getElementById("t1_total").textContent = t1Sum;
