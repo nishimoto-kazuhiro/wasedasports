@@ -7,6 +7,7 @@ title: 野球型競技　スコア出力ツール
 <header class="sp-gen__head">
   <h1>野球型競技 スコア作成ツール（オープン戦）</h1>
   <p class="sp-gen__desc">数値を入力するとリアルタイムでHTMLコードが更新されます。</p>
+  <a href="{{ site.baseurl }}/runs"><div class="change_btn">フルモード</div></a>
 </header>
 
 <section class="sp-gen" aria-label="野球スコアHTML 出力装置">
@@ -83,7 +84,14 @@ title: 野球型競技　スコア出力ツール
       </div>
     </div>
   </div>
-
+<style>
+  .change_btn{
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 14px; border-radius: 12px; text-decoration: none;
+      font-weight: 900; font-size: 14px; border: 1px solid rgba(0,0,0,.10);
+      background: rgba(0,0,0,.92); color: #fff; cursor: pointer;
+  }
+</style>
 <script>
   (function(){
     function toKanjiNum(n) {
