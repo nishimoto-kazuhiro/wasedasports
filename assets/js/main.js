@@ -67,3 +67,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+// はてなボタンの設定
+function toggleHelp(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  
+  // 非表示なら表示、表示中なら非表示に切り替え
+  if (el.style.display === "none" || el.style.display === "") {
+    el.style.display = "block";
+  } else {
+    el.style.display = "none";
+  }
+}
