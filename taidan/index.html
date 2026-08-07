@@ -5,8 +5,8 @@ title: 対談字起こしツール
 
 <main>
 <header class="sp-gen__head">
-  <h1>字起こしタグツール（複数人対談・他己紹介対応）</h1>
-  <p class="sp-gen__desc">対談人数を設定し、メンバー情報、リード文、質問・全員の回答を入力すると、リアルタイムでHTMLコードが生成されます。</p>
+  <h1>字起こしタグツール（質問・回答独立追加対応）</h1>
+  <p class="sp-gen__desc">対談者を登録後、見出し・質問・各回答を自由に追加・編集してHTMLコードをリアルタイム生成できます。</p>
 </header>
 
 <section class="sp-gen" aria-label="字起こしタグツール">
@@ -42,28 +42,29 @@ title: 対談字起こしツール
 
         <hr style="border: 0; border-top: 1px dashed rgba(0,0,0,.1); margin: 5px 0;">
 
-        <!-- 1. 対談人数の指定 -->
-        <div class="sp-gen__row" style="background: #eef7ff; padding: 10px; border-radius: 6px; border: 1px solid #b3d7ff;">
-          <div class="sp-gen__label" style="color: #004085; font-weight: bold;">◆ 対談人数を設定</div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-            <input type="number" class="sp-gen__input" id="id_member_count" min="1" max="10" value="3" style="width: 80px;">
-            <span>人</span>
+        <!-- 1. 登場者の登録（名前のみ） -->
+        <div class="sp-gen__row" style="background: #eef7ff; padding: 12px; border-radius: 6px; border: 1px solid #b3d7ff;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="sp-gen__label" style="color: #004085; font-weight: bold; margin: 0;">◆ 登場者の登録（名前のみ）</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 12px; color: #555;">人数:</span>
+              <input type="number" class="sp-gen__input" id="id_member_count" min="1" max="10" value="3" style="width: 60px; padding: 2px 6px; text-align: center;">
+            </div>
           </div>
+          <!-- 名前の動的コンテナ -->
+          <div id="member_container" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
         </div>
-
-        <!-- 2. 対談メンバーのプロフィール入力欄（動的生成） -->
-        <div id="member_container" style="display: flex; flex-direction: column; gap: 10px;"></div>
 
         <hr style="border: 0; border-top: 1px dashed rgba(0,0,0,.1); margin: 5px 0;">
 
-        <!-- 3. 項目（見出し / 質問・各人回答）の動的コンテナ -->
+        <!-- 2. 項目（見出し / 質問・回答）の動的コンテナ -->
         <div id="item_container" style="display: flex; flex-direction: column; gap: 14px;"></div>
 
         <!-- 項目の追加・削除操作ボタン -->
         <div class="sp-gen__actions" style="margin-top: 5px;">
-          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_qa" type="button" style="border-color: #0066cc; color: #0066cc;">＋ 質問を追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_qa" type="button" style="border-color: #0066cc; color: #0066cc;">＋ 質問ブロックを追加</button>
           <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_h3" type="button" style="border-color: #2e7d32; color: #2e7d32;">＋ 見出し(h3)を追加</button>
-          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_remove_item" type="button" style="border-color: #cc0000; color: #cc0000;">－ 最後の項目を削除</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_remove_item" type="button" style="border-color: #cc0000; color: #cc0000;">－ 最後のブロックを削除</button>
         </div>
 
         <div class="sp-gen__actions" style="margin-top: 15px;">
@@ -96,7 +97,7 @@ title: 対談字起こしツール
 
   <script>
     (function(){
-      var itemCount = 0; // 全項目のカウント
+      var itemCount = 0; // 全ブロックのカウント
       var qCount = 0;    // 質問のナンバリング用
 
       function esc(s){
@@ -119,7 +120,18 @@ title: 対談字起こしツール
         return esc(text).replace(/\r\n|\r|\n/g, '<br>');
       }
 
-      // --- メンバー（名前・メモ）入力エリアの再構築 ---
+      // 現在登録されている登場者名の配列を取得
+      function getMemberNames() {
+        var inputs = document.querySelectorAll(".input-member-name");
+        var names = [];
+        inputs.forEach(function(inp, idx) {
+          var name = inp.value.trim();
+          names.push(name || ("対談者" + (idx + 1)));
+        });
+        return names;
+      }
+
+      // 登場者の名前入力欄（シンプル版）を生成・更新
       function rebuildMemberInputs() {
         var countInput = document.getElementById("id_member_count");
         var count = parseInt(countInput ? countInput.value : 1, 10) || 1;
@@ -129,94 +141,99 @@ title: 対談字起こしツール
         var container = document.getElementById("member_container");
         if (!container) return;
 
-        // 現時点の値をバックアップ
-        var oldData = [];
-        var oldRows = container.querySelectorAll(".member-row");
-        oldRows.forEach(function(row, idx) {
-          var nameEl = row.querySelector(".input-member-name");
-          var memoEl = row.querySelector(".input-member-memo");
-          oldData.push({
-            name: nameEl ? nameEl.value : "",
-            memo: memoEl ? memoEl.value : ""
-          });
+        // 現時点での入力を保持
+        var oldNames = [];
+        container.querySelectorAll(".input-member-name").forEach(function(inp) {
+          oldNames.push(inp.value);
         });
 
-        // デフォルト初期値（初回）
         var defaultNames = ["北嶋", "井上", "成瀬"];
-
         container.innerHTML = "";
 
         for (var i = 0; i < count; i++) {
-          var rowDiv = document.createElement("div");
-          rowDiv.className = "sp-gen__row member-row";
-          rowDiv.style.background = "#fafafa";
-          rowDiv.style.padding = "10px";
-          rowDiv.style.borderRadius = "6px";
-          rowDiv.style.border = "1px solid #eee";
+          var valName = (oldNames[i] !== undefined) ? oldNames[i] : (defaultNames[i] || ("対談者" + (i + 1)));
+          
+          var wrap = document.createElement("div");
+          wrap.style.display = "flex";
+          wrap.style.alignItems = "center";
+          wrap.style.gap = "4px";
 
-          var valName = oldData[i] ? oldData[i].name : (defaultNames[i] || ("メンバー" + (i + 1)));
-          var valMemo = oldData[i] ? oldData[i].memo : "";
+          wrap.innerHTML = 
+            '<span style="font-size:12px; color:#666;">氏名' + (i + 1) + ':</span>' +
+            '<input class="sp-gen__input input-member-name" value="' + esc(valName) + '" placeholder="例：北嶋" style="width: 100px; padding: 4px 8px;">';
 
-          rowDiv.innerHTML = 
-            '<div class="sp-gen__label" style="font-weight:bold; color:#333;">◆ メンバー ' + (i + 1) + '</div>' +
-            '<input class="sp-gen__input input-member-name" id="id_member_name_' + i + '" placeholder="例：北嶋" value="' + esc(valName) + '" style="margin-bottom:4px;">' +
-            '<textarea class="sp-gen__textarea input-member-memo" id="id_member_memo_' + i + '" style="min-height: 60px;" placeholder="プロフィール・メモ（末尾に出力される場合に使用）">' + esc(valMemo) + '</textarea>';
+          container.appendChild(wrap);
 
-          container.appendChild(rowDiv);
-
-          var nameEl = document.getElementById("id_member_name_" + i);
-          var memoEl = document.getElementById("id_member_memo_" + i);
-          if (nameEl) nameEl.addEventListener("input", function() { refreshMemberLabels(); build(); });
-          if (memoEl) memoEl.addEventListener("input", build);
+          var inp = wrap.querySelector(".input-member-name");
+          inp.addEventListener("input", function() {
+            updateAllMemberDropdowns();
+            build();
+          });
         }
 
-        // 既存の質問項目の回答者ラベルも更新
-        refreshMemberLabels();
+        updateAllMemberDropdowns();
       }
 
-      // 質問内の「各回答者のラベル」を入力された名前と動的に連動させる
-      function refreshMemberLabels() {
-        var memberInputs = document.querySelectorAll(".input-member-name");
-        var container = document.getElementById("item_container");
-        if (!container) return;
+      // ドロップダウンの選択肢を一括更新（選択状態は維持）
+      function updateAllMemberDropdowns() {
+        var names = getMemberNames();
+        var dropdowns = document.querySelectorAll(".select-speaker");
 
-        var qaRows = container.querySelectorAll(".item-qa");
-        qaRows.forEach(function(qaRow) {
-          var answersBox = qaRow.querySelector(".answers-box");
-          if (!answersBox) return;
+        dropdowns.forEach(function(select) {
+          var currentVal = select.value;
+          select.innerHTML = "";
 
-          var aRows = answersBox.querySelectorAll(".single-answer-row");
-          memberInputs.forEach(function(mInput, idx) {
-            var mName = mInput.value.trim() || ("メンバー" + (idx + 1));
-            
-            if (aRows[idx]) {
-              var label = aRows[idx].querySelector(".ans-member-label");
-              if (label) label.textContent = mName + " の回答";
-            } else {
-              // 人数が増えた場合は回答欄を新しく追加
-              var newARow = document.createElement("div");
-              newARow.className = "single-answer-row";
-              newARow.style.marginTop = "6px";
-              newARow.innerHTML = 
-                '<div class="sp-gen__label ans-member-label" style="font-size:12px; color:#555;">' + esc(mName) + ' の回答</div>' +
-                '<textarea class="sp-gen__textarea input-a" data-member-index="' + idx + '" style="min-height: 60px;" placeholder="回答文を入力"></textarea>';
-              answersBox.appendChild(newARow);
-              
-              var newAEl = newARow.querySelector(".input-a");
-              if (newAEl) newAEl.addEventListener("input", build);
-            }
+          names.forEach(function(name) {
+            var opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            select.appendChild(opt);
           });
 
-          // 人数が減った場合は余分な回答欄を削除
-          while (aRows.length > memberInputs.length) {
-            var lastIndex = aRows.length - 1;
-            aRows[lastIndex].remove();
-            aRows = answersBox.querySelectorAll(".single-answer-row");
+          if (names.includes(currentVal)) {
+            select.value = currentVal;
           }
         });
       }
 
-      // 質問・全員の回答セットを追加
+      // 質問ブロックの中に独立した「回答欄」を追加
+      function addAnswerRow(answersBox, speakerName, answerText) {
+        var aDiv = document.createElement("div");
+        aDiv.className = "single-answer-row";
+        aDiv.style.display = "flex";
+        aDiv.style.gap = "8px";
+        aDiv.style.alignItems = "flex-start";
+        aDiv.style.marginTop = "6px";
+
+        var names = getMemberNames();
+        var optionsHtml = "";
+        names.forEach(function(n) {
+          var selected = (n === speakerName) ? ' selected' : '';
+          optionsHtml += '<option value="' + esc(n) + '"' + selected + '>' + esc(n) + '</option>';
+        });
+
+        aDiv.innerHTML = 
+          '<select class="sp-gen__input select-speaker" style="width: 110px; flex-shrink: 0; padding: 4px;">' +
+            optionsHtml +
+          '</select>' +
+          '<textarea class="sp-gen__textarea input-a" style="min-height: 50px; flex-grow: 1;" placeholder="回答文を入力">' + esc(answerText || "") + '</textarea>' +
+          '<button type="button" class="btn-del-ans" style="background:none; border:none; color:#cc0000; cursor:pointer; font-weight:bold; padding: 4px 8px;">✕</button>';
+
+        answersBox.appendChild(aDiv);
+
+        var selectEl = aDiv.querySelector(".select-speaker");
+        var textareaEl = aDiv.querySelector(".input-a");
+        var delBtn = aDiv.querySelector(".btn-del-ans");
+
+        selectEl.addEventListener("change", build);
+        textareaEl.addEventListener("input", build);
+        delBtn.addEventListener("click", function() {
+          aDiv.remove();
+          build();
+        });
+      }
+
+      // 質問ブロックを追加
       function addQARow(qVal) {
         itemCount++;
         qCount++;
@@ -228,33 +245,30 @@ title: 対談字起こしツール
         rowDiv.id = "item_row_" + itemCount;
         rowDiv.setAttribute("data-type", "qa");
 
-        var html = '<div class="sp-gen__label" style="color: #0066cc; font-weight:bold;">質問 ' + qCount + '</div>' +
-                   '<input class="sp-gen__input input-q" id="id_q_' + itemCount + '" placeholder="例：まずは他己紹介をお願いします" value="' + esc(qVal || "") + '">' +
-                   '<div class="answers-box" style="margin-top: 8px; padding-left: 10px; border-left: 3px solid #0066cc;">';
+        rowDiv.innerHTML = 
+          '<div class="sp-gen__label" style="color: #0066cc; font-weight:bold;">質問 ' + qCount + '</div>' +
+          '<input class="sp-gen__input input-q" id="id_q_' + itemCount + '" placeholder="例：まずは他己紹介をお願いします" value="' + esc(qVal || "") + '">' +
+          '<div class="answers-box" style="margin-top: 8px; padding-left: 10px; border-left: 3px solid #0066cc;"></div>' +
+          '<button class="sp-gen__btn sp-gen__btn--ghost btn-add-ans" type="button" style="margin-top: 8px; font-size: 12px; padding: 4px 10px; border-color: #0066cc; color: #0066cc;">＋ 回答を追加</button>';
 
-        var memberInputs = document.querySelectorAll(".input-member-name");
-        memberInputs.forEach(function(mInput, idx) {
-          var mName = mInput.value.trim() || ("メンバー" + (idx + 1));
-          html += '<div class="single-answer-row" style="margin-top: 6px;">' +
-                  '  <div class="sp-gen__label ans-member-label" style="font-size:12px; color:#555;">' + esc(mName) + ' の回答</div>' +
-                  '  <textarea class="sp-gen__textarea input-a" data-member-index="' + idx + '" style="min-height: 60px;" placeholder="回答文を入力"></textarea>' +
-                  '</div>';
-        });
-
-        html += '</div>';
-        rowDiv.innerHTML = html;
         container.appendChild(rowDiv);
 
-        var qEl = document.getElementById("id_q_" + itemCount);
-        if (qEl) qEl.addEventListener("input", build);
+        var qEl = rowDiv.querySelector(".input-q");
+        var answersBox = rowDiv.querySelector(".answers-box");
+        var addAnsBtn = rowDiv.querySelector(".btn-add-ans");
 
-        var aEls = rowDiv.querySelectorAll(".input-a");
-        aEls.forEach(function(aEl) {
-          aEl.addEventListener("input", build);
+        qEl.addEventListener("input", build);
+
+        addAnsBtn.addEventListener("click", function() {
+          addAnswerRow(answersBox);
+          build();
         });
+
+        // 初期状態で回答欄を1つ作っておく
+        addAnswerRow(answersBox);
       }
 
-      // 見出し(h3)を追加
+      // 見出し(h3)ブロックを追加
       function addH3Row(h3Val) {
         itemCount++;
         var container = document.getElementById("item_container");
@@ -279,7 +293,7 @@ title: 対談字起こしツール
         if (h3El) h3El.addEventListener("input", build);
       }
 
-      // 最後の項目（質問または見出し）を削除
+      // 最後のブロック（質問または見出し）を削除
       function removeItemRow() {
         if (itemCount <= 1) return;
         var row = document.getElementById("item_row_" + itemCount);
@@ -293,7 +307,7 @@ title: 対談字起こしツール
         }
       }
 
-      // HTML出力コード生成のメイン処理
+      // HTML出力コード生成
       function build(){
         var leadText = v("id_lead");
         var dateText = v("id_date");
@@ -310,7 +324,7 @@ title: 対談字起こしツール
           htmlParts.push('<p>※この取材は' + esc(dateText) + 'に' + esc(styleText) + 'で行われました</p>');
         }
 
-        // 3. 質問・回答・見出しエリアの走査
+        // 3. 質問・回答・見出しの走査
         var container = document.getElementById("item_container");
         if (container) {
           var rows = container.getElementsByClassName("item-row");
@@ -326,11 +340,6 @@ title: 対談字起こしツール
               }
             }
           }
-
-          var memberNames = [];
-          document.querySelectorAll(".input-member-name").forEach(function(mInput, idx) {
-            memberNames.push(mInput.value.trim() || ("メンバー" + (idx + 1)));
-          });
 
           for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
@@ -349,18 +358,20 @@ title: 対談字起こしツール
               if (qText) {
                 var qaLines = ['――' + esc(qText)];
 
-                var aInputs = row.querySelectorAll(".input-a");
-                aInputs.forEach(function(aInput) {
-                  var aText = aInput.value.trim();
-                  var mIdx = parseInt(aInput.getAttribute("data-member-index"), 10);
-                  var speakerName = memberNames[mIdx] || "";
+                var answerRows = row.querySelectorAll(".single-answer-row");
+                answerRows.forEach(function(aRow) {
+                  var speakerSelect = aRow.querySelector(".select-speaker");
+                  var answerTextarea = aRow.querySelector(".input-a");
+
+                  var speaker = speakerSelect ? speakerSelect.value : "";
+                  var aText = answerTextarea ? answerTextarea.value.trim() : "";
 
                   if (aText) {
-                    qaLines.push(esc(speakerName) + ' ' + formatAnswer(aText));
+                    qaLines.push(esc(speaker) + ' ' + formatAnswer(aText));
                   }
                 });
 
-                // 最後の質問の場合のみ「――ありがとうございました！」を付与
+                // 最後の質問の場合のみ「ーーありがとうございました！」を付与
                 if (i === lastQaIndex) {
                   var lastLineIndex = qaLines.length - 1;
                   qaLines[lastLineIndex] += '<br>――ありがとうございました！';
@@ -370,26 +381,6 @@ title: 対談字起こしツール
               }
             }
           }
-        }
-
-        // 4. メンバープロフィール（記入がある場合のみ出力）
-        var profHtmlParts = [];
-        var memberInputs = document.querySelectorAll(".member-row");
-        memberInputs.forEach(function(mRow) {
-          var nameVal = mRow.querySelector(".input-member-name").value.trim();
-          var memoVal = mRow.querySelector(".input-member-memo").value.trim();
-          
-          if (nameVal || memoVal) {
-            var singleProf = "";
-            if (nameVal) singleProf += '<strong>◆' + esc(nameVal) + '</strong>';
-            if (nameVal && memoVal) singleProf += '<br>';
-            if (memoVal) singleProf += formatAnswer(memoVal);
-            profHtmlParts.push(singleProf);
-          }
-        });
-
-        if (profHtmlParts.length > 0) {
-          htmlParts.push('<p class="wp-block-paragraph">\n' + profHtmlParts.join('<br><br>\n') + '\n</p>');
         }
 
         var fullHtml = htmlParts.join('\n\n');
@@ -413,7 +404,6 @@ title: 対談字起こしツール
 
         addH3Row(); // 見出し1
         addQARow("まずは他己紹介をお願いします"); // 質問1
-        addQARow(); // 質問2
       }
 
       function clearAll() {
