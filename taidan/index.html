@@ -5,7 +5,7 @@ title: 対談字起こしツール
 
 <main>
 <header class="sp-gen__head">
-  <h1>字起こしタグツール（質問・回答独立追加対応）</h1>
+  <h1>字起こしタグツール（クラス指定・自動全員回答対応）</h1>
   <p class="sp-gen__desc">対談者を登録後、見出し・質問・各回答を自由に追加・編集してHTMLコードをリアルタイム生成できます。</p>
 </header>
 
@@ -141,17 +141,16 @@ title: 対談字起こしツール
         var container = document.getElementById("member_container");
         if (!container) return;
 
-        // 現時点での入力を保持
         var oldNames = [];
         container.querySelectorAll(".input-member-name").forEach(function(inp) {
           oldNames.push(inp.value);
         });
 
-        var defaultNames = ["北嶋", "井上", "成瀬"];
+        var defaultNames = ["名前１", "名前２", "名前３"];
         container.innerHTML = "";
 
         for (var i = 0; i < count; i++) {
-          var valName = (oldNames[i] !== undefined) ? oldNames[i] : (defaultNames[i] || ("対談者" + (i + 1)));
+          var valName = (oldNames[i] !== undefined) ? oldNames[i] : (defaultNames[i] || ("名前" + (i + 1)));
           
           var wrap = document.createElement("div");
           wrap.style.display = "flex";
@@ -174,7 +173,7 @@ title: 対談字起こしツール
         updateAllMemberDropdowns();
       }
 
-      // ドロップダウンの選択肢を一括更新（選択状態は維持）
+      // ドロップダウンの選択肢を一括更新
       function updateAllMemberDropdowns() {
         var names = getMemberNames();
         var dropdowns = document.querySelectorAll(".select-speaker");
@@ -233,7 +232,7 @@ title: 対談字起こしツール
         });
       }
 
-      // 質問ブロックを追加
+      // 質問ブロックを追加（デフォルトで人数分の回答欄を自動生成）
       function addQARow(qVal) {
         itemCount++;
         qCount++;
@@ -247,9 +246,9 @@ title: 対談字起こしツール
 
         rowDiv.innerHTML = 
           '<div class="sp-gen__label" style="color: #0066cc; font-weight:bold;">質問 ' + qCount + '</div>' +
-          '<input class="sp-gen__input input-q" id="id_q_' + itemCount + '" placeholder="例：まずは他己紹介をお願いします" value="' + esc(qVal || "") + '">' +
+          '<input class="sp-gen__input input-q" id="id_q_' + itemCount + '" placeholder="例：質問テキストを入力" value="' + esc(qVal || "") + '">' +
           '<div class="answers-box" style="margin-top: 8px; padding-left: 10px; border-left: 3px solid #0066cc;"></div>' +
-          '<button class="sp-gen__btn sp-gen__btn--ghost btn-add-ans" type="button" style="margin-top: 8px; font-size: 12px; padding: 4px 10px; border-color: #0066cc; color: #0066cc;">＋ 回答を追加</button>';
+          '<button class="sp-gen__btn sp-gen__btn--ghost btn-add-ans" type="button" style="margin-top: 8px; font-size: 12px; padding: 4px 10px; border-color: #0066cc; color: #0066cc;">＋ 回答欄を追加</button>';
 
         container.appendChild(rowDiv);
 
@@ -264,8 +263,11 @@ title: 対談字起こしツール
           build();
         });
 
-        // 初期状態で回答欄を1つ作っておく
-        addAnswerRow(answersBox);
+        // 登録されている人数分の回答欄をデフォルトで一括追加
+        var names = getMemberNames();
+        names.forEach(function(speakerName) {
+          addAnswerRow(answersBox, speakerName);
+        });
       }
 
       // 見出し(h3)ブロックを追加
@@ -328,18 +330,6 @@ title: 対談字起こしツール
         var container = document.getElementById("item_container");
         if (container) {
           var rows = container.getElementsByClassName("item-row");
-          
-          // 最後に存在する有効な質問（qa）のインデックスを特定
-          var lastQaIndex = -1;
-          for (var k = rows.length - 1; k >= 0; k--) {
-            if (rows[k].getAttribute("data-type") === "qa") {
-              var qVal = rows[k].querySelector(".input-q").value.trim();
-              if (qVal) {
-                lastQaIndex = k;
-                break;
-              }
-            }
-          }
 
           for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
@@ -356,7 +346,7 @@ title: 対談字起こしツール
               var qText = qInput ? qInput.value.trim() : "";
 
               if (qText) {
-                var qaLines = ['――' + esc(qText)];
+                htmlParts.push('<p class="question">――' + esc(qText) + '</p>');
 
                 var answerRows = row.querySelectorAll(".single-answer-row");
                 answerRows.forEach(function(aRow) {
@@ -367,17 +357,9 @@ title: 対談字起こしツール
                   var aText = answerTextarea ? answerTextarea.value.trim() : "";
 
                   if (aText) {
-                    qaLines.push(esc(speaker) + ' ' + formatAnswer(aText));
+                    htmlParts.push('<p class="answer"><strong>' + esc(speaker) + '</strong> ' + formatAnswer(aText) + '</p>');
                   }
                 });
-
-                // 最後の質問の場合のみ「ーーありがとうございました！」を付与
-                if (i === lastQaIndex) {
-                  var lastLineIndex = qaLines.length - 1;
-                  qaLines[lastLineIndex] += '<br>――ありがとうございました！';
-                }
-
-                htmlParts.push('<p>' + qaLines.join('<br>\n') + '</p>');
               }
             }
           }
@@ -403,7 +385,7 @@ title: 対談字起こしツール
         rebuildMemberInputs();
 
         addH3Row(); // 見出し1
-        addQARow("まずは他己紹介をお願いします"); // 質問1
+        addQARow(); // 質問1
       }
 
       function clearAll() {
