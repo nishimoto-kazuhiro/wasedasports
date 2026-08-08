@@ -479,11 +479,11 @@ var formattedA = formatAnswer(aText);
 
 var qaHtml = '<p><strong>ーー' + esc(qText) + '</strong><br>　' + formattedA + '</p>';
 
-var thanks = '<p><strong>ーーありがとうございました！</strong></p>'
+if (i === lastQaIndex) {
+  qaHtml += '\n<p><strong>ーーありがとうございました！</strong></p>';
+}
 
-var qabdy = qaHtml + thanls
-
-htmlParts.push(qabody);
+htmlParts.push(qabdy);
 
 }
 
