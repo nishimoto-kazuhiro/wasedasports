@@ -6,7 +6,7 @@ title: 打者成績表生成ツール
 <main>
 <header class="sp-gen__head">
   <h1>打者成績表タグ生成ツール</h1>
-  <p class="sp-gen__desc">打者の成績・イニングごとの打席結果を入力し、HTMLテーブルコードを生成します。ヒットや打点クラスの自動付与・延長イニングに対応しています。</p>
+  <p class="sp-gen__desc">打者の成績・イニングごとの打席結果を入力し、HTMLテーブルコードを生成します。H/Rボタンで直感的にスタイルを切り替えられます。</p>
 </header>
 
 <section class="sp-gen" aria-label="打者成績表生成ツール">
@@ -52,20 +52,39 @@ title: 打者成績表生成ツール
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 3px;
+    }
+    
+    /* H / R トグルボタンのスタイリング */
+    .toggle-group {
+      display: flex;
       gap: 2px;
     }
-    .chk-group {
-      display: flex;
-      gap: 3px;
+    .btn-toggle {
+      background: #f0f0f0;
+      color: #666;
+      border: 1px solid #ccc;
+      border-radius: 3px;
       font-size: 10px;
-      color: #555;
-    }
-    .chk-group label {
+      font-weight: bold;
+      padding: 1px 5px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 1px;
+      user-select: none;
+      transition: all 0.15s ease;
     }
+    /* H (Hit) アクティブ時：赤色反転 */
+    .btn-toggle.btn-hit.active {
+      background: #e53935;
+      color: #fff;
+      border-color: #c62828;
+    }
+    /* R (RBI) アクティブ時：青色反転 */
+    .btn-toggle.btn-rbi.active {
+      background: #1e88e5;
+      color: #fff;
+      border-color: #1565c0;
+    }
+
     .btn-row-action {
       background: none;
       border: 1px solid #0066cc;
@@ -112,7 +131,7 @@ title: 打者成績表生成ツール
         </div>
 
         <div class="sp-gen__actions" style="margin-top: 10px;">
-          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_row" type="button" style="border-color: #0066cc; background-color: #0066cc; color: #fff;">＋ 最後に打者を追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_row" type="button" style="border-color: #0066cc; background-color: #0066cc; color: #fff;">＋ 打者を追加</button>
           <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_inning" type="button" style="border-color: #2e7d32; background-color: #2e7d32; color: #fff;">＋ 延長イニングを追加</button>
           <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear_all" type="button" style="border-color: #cc0000; color: #cc0000;">クリア</button>
         </div>
@@ -174,12 +193,11 @@ title: 打者成績表生成ツール
         return map;
       }
 
-      // テーブルヘッダーのイニングセルを再描画
+      // テーブルヘッダーのイニングセルを描画
       function renderHeaderInnings() {
         var tr = document.getElementById("thead_row");
         if (!tr) return;
 
-        // 一度すべてのthを削除して再構築
         tr.innerHTML = 
           '<th style="width: 40px;">挿入</th>' +
           '<th>打順</th>' +
@@ -192,7 +210,6 @@ title: 打者成績表生成ツール
 
         for (var i = 1; i <= totalInnings; i++) {
           var th = document.createElement("th");
-          // 全角数字に変換して表示
           th.textContent = String(i).replace(/[0-9]/g, function(s) {
             return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
           });
@@ -215,23 +232,23 @@ title: 打者成績表生成ツール
 
         var html = 
           '<td><button type="button" class="btn-row-action btn-insert">＋</button></td>' +
-          '<td><input class="inp-order" value="' + esc(d.order || "") + '"></td>' +
-          '<td><input class="inp-pos" value="' + esc(d.pos || "") + '"></td>' +
-          '<td><input class="inp-name" value="' + esc(d.name || "") + '"></td>' +
-          '<td><input class="inp-stat inp-da" value="' + esc(d.da || "") + '"></td>' +
-          '<td><input class="inp-stat inp-an" value="' + esc(d.an || "") + '"></td>' +
-          '<td><input class="inp-stat inp-ten" value="' + esc(d.ten || "") + '"></td>' +
-          '<td><input class="inp-stat inp-ritsu" value="' + esc(d.ritsu || "") + '"></td>';
+          '<td><input type="text" class="inp-order" value="' + esc(d.order || "") + '"></td>' +
+          '<td><input type="text" class="inp-pos" value="' + esc(d.pos || "") + '"></td>' +
+          '<td><input type="text" class="inp-name" value="' + esc(d.name || "") + '"></td>' +
+          '<td><input type="text" class="inp-stat inp-da" value="' + esc(d.da || "") + '"></td>' +
+          '<td><input type="text" class="inp-stat inp-an" value="' + esc(d.an || "") + '"></td>' +
+          '<td><input type="text" class="inp-stat inp-ten" value="' + esc(d.ten || "") + '"></td>' +
+          '<td><input type="text" class="inp-stat inp-ritsu" value="' + esc(d.ritsu || "") + '"></td>';
 
-        // イニング数分の打席結果セルを追加
+        // イニング数分の打席結果セルを追加（H/Rボタン配置）
         for (var i = 0; i < totalInnings; i++) {
           html += 
             '<td>' +
             '  <div class="inning-cell">' +
-            '    <input class="inp-res" value="">' +
-            '    <div class="chk-group">' +
-            '      <label><input type="checkbox" class="chk-hit">H</label>' +
-            '      <label><input type="checkbox" class="chk-rbi">R</label>' +
+            '    <input type="text" class="inp-res" value="">' +
+            '    <div class="toggle-group">' +
+            '      <button type="button" class="btn-toggle btn-hit">H</button>' +
+            '      <button type="button" class="btn-toggle btn-rbi">R</button>' +
             '    </div>' +
             '  </div>' +
             '</td>';
@@ -248,15 +265,21 @@ title: 打者成績表生成ツール
         }
 
         // イベント設定
-        var inputs = tr.querySelectorAll("input");
-        inputs.forEach(function(inp) {
+        var textInputs = tr.querySelectorAll('input[type="text"]');
+        textInputs.forEach(function(inp) {
           inp.addEventListener("input", function() {
             saveBasicInfo();
             build();
           });
-          if (inp.type === "checkbox") {
-            inp.addEventListener("change", build);
-          }
+        });
+
+        // H / R ボタンクリックイベント
+        var toggleBtns = tr.querySelectorAll(".btn-toggle");
+        toggleBtns.forEach(function(btn) {
+          btn.addEventListener("click", function() {
+            btn.classList.toggle("active");
+            build();
+          });
         });
 
         // 途中に挿入ボタン
@@ -273,6 +296,18 @@ title: 打者成績表生成ツール
         });
       }
 
+      // デフォルトで指定した行数を一括生成
+      function initDefaultRows(count) {
+        var tbody = document.getElementById("stats_tbody");
+        if (tbody) tbody.innerHTML = "";
+        
+        for (var i = 1; i <= count; i++) {
+          // 打順1〜9の数値をあらかじめ初期値として入力
+          var defaultOrder = (i <= 9) ? String(i) : "";
+          addRow({ order: defaultOrder });
+        }
+      }
+
       // 延長イニングを追加する際、既存のすべての行に新イニングセルを追加
       function addInningColumn() {
         totalInnings++;
@@ -285,17 +320,22 @@ title: 打者成績表生成ツール
           var newTd = document.createElement("td");
           newTd.innerHTML = 
             '<div class="inning-cell">' +
-            '  <input class="inp-res" value="">' +
-            '  <div class="chk-group">' +
-            '    <label><input type="checkbox" class="chk-hit">H</label>' +
-            '    <label><input type="checkbox" class="chk-rbi">R</label>' +
+            '  <input type="text" class="inp-res" value="">' +
+            '  <div class="toggle-group">' +
+            '    <button type="button" class="btn-toggle btn-hit">H</button>' +
+            '    <button type="button" class="btn-toggle btn-rbi">R</button>' +
             '  </div>' +
             '</div>';
 
-          var inputs = newTd.querySelectorAll("input");
-          inputs.forEach(function(inp) {
-            inp.addEventListener("input", build);
-            if (inp.type === "checkbox") inp.addEventListener("change", build);
+          var inp = newTd.querySelector('.inp-res');
+          inp.addEventListener("input", build);
+
+          var toggleBtns = newTd.querySelectorAll(".btn-toggle");
+          toggleBtns.forEach(function(btn) {
+            btn.addEventListener("click", function() {
+              btn.classList.toggle("active");
+              build();
+            });
           });
 
           tr.insertBefore(newTd, delTd);
@@ -359,7 +399,6 @@ title: 打者成績表生成ツール
         html += '<th>点</th>\n';
         html += '<th>率</th>\n';
 
-        // ヘッダーのイニング（１〜９...全角変換）
         for (var i = 1; i <= totalInnings; i++) {
           var zenNum = String(i).replace(/[0-9]/g, function(s) {
             return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
@@ -397,12 +436,12 @@ title: 打者成績表生成ツール
             html += '<td>' + esc(ten) + '</td>\n';
             html += '<td>' + esc(ritsu) + '</td>\n';
 
-            // 各イニング打席の判定
+            // 各イニング打席の判定（H/Rトグルボタンの活性状態を判定）
             var inningCells = tr.querySelectorAll(".inning-cell");
             inningCells.forEach(function(cell) {
               var resVal = cell.querySelector(".inp-res").value.trim();
-              var isHit = cell.querySelector(".chk-hit").checked;
-              var isRbi = cell.querySelector(".chk-rbi").checked;
+              var isHit = cell.querySelector(".btn-hit").classList.contains("active");
+              var isRbi = cell.querySelector(".btn-rbi").classList.contains("active");
 
               var classAttr = "";
               if (isHit && isRbi) {
@@ -413,7 +452,6 @@ title: 打者成績表生成ツール
                 classAttr = ' class="rbi"';
               }
 
-              // 空の場合は &nbsp; をセット
               var printVal = resVal ? esc(resVal) : '&nbsp;';
               html += '<td' + classAttr + '>' + printVal + '</td>\n';
             });
@@ -444,10 +482,9 @@ title: 打者成績表生成ツール
       function clearAll() {
         if (!confirm("入力データをクリアしますか？")) return;
         try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-        document.getElementById("stats_tbody").innerHTML = "";
         totalInnings = 9;
         renderHeaderInnings();
-        addRow();
+        initDefaultRows(9); // 初期状態の9行に戻す
         build();
       }
 
@@ -485,9 +522,9 @@ title: 打者成績表生成ツール
           t.focus(); t.select();
         });
 
-        // 保存された基本情報を復元（なければ初期1行）
+        // 保存された基本情報を復元（なければデフォルト9行生成）
         if (!loadBasicInfo()) {
-          addRow();
+          initDefaultRows(9);
         }
         build();
       }
