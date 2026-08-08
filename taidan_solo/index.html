@@ -476,17 +476,14 @@ if (qText || aText) {
 
 var formattedA = formatAnswer(aText);
 
-// 最後の質問の場合のみ「ーーありがとうございました！」を自動付与
 
-if (i === lastQaIndex) {
+var qaHtml = '<p><strong>ーー' + esc(qText) + '</strong><br>　' + formattedA + '</p>';
 
-formattedA += '<br><strong>ーーありがとうございました！</strong>';
+var thanks = '<p><strong>ーーありがとうございました！</strong></p>'
 
-}
+var qabdy = qaHtml + thanls
 
-var qaHtml = '<p><strong>ーー' + esc(qText) + '</strong> <br> ' + formattedA + '</p>';
-
-htmlParts.push(qaHtml);
+htmlParts.push(qabody);
 
 }
 
@@ -502,7 +499,7 @@ htmlParts.push(qaHtml);
 
 if (profName || profMemo) {
 
-var profHtml = '<p class="wp-block-paragraph">';
+var profHtml = '<p>';
 
 if (profName) {
 
