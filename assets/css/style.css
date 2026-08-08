@@ -237,7 +237,7 @@ body {
     .sp-gen__body { padding: 14px; display: flex; flex-direction: column; gap: 20px; }
     .sp-gen__grid { display: flex; flex-direction: column; gap: 14px; }
     .sp-gen__row { display: grid; grid-template-columns: 1fr; gap: 6px; }
-    .sp-gen__label { font-size: 12px; font-weight: 900; opacity: .85; }
+    .sp-gen__label { font-size: 12px; font-weight: bold; opacity: .85; }
     
     /* 設定エリア */
     .sp-gen__config-wrap { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: rgba(0,0,0,.02); padding: 12px; border-radius: 8px; border: 1px solid rgba(0,0,0,.05); }
