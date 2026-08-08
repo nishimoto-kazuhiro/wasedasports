@@ -1,11 +1,11 @@
 ---
 layout: default
-title: 対談しタグツール
+title: 対談タグツール（２人〜）
 ---
 
 <main>
 <header class="sp-gen__head">
-  <h1>対談しタグツール</h1>
+  <h1>対談タグツール（２人〜）</h1>
   <p class="sp-gen__desc">対談の字起こしができます。</p>
 </header>
 
@@ -32,10 +32,10 @@ title: 対談しタグツール
           <div class="sp-gen__label">◆ 取材形式</div>
           <div class="sp-gen__radio-group" style="display: flex; gap: 16px; margin-top: 4px;">
             <label class="sp-gen__radio-label" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
-              <input type="radio" name="interview_style" value="対面" checked style="cursor: pointer;"> 対面
+              <input type="radio" name="interview_style" value="" checked style="cursor: pointer;"> 対面
             </label>
             <label class="sp-gen__radio-label" style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 14px;">
-              <input type="radio" name="interview_style" value="オンライン" style="cursor: pointer;"> オンライン
+              <input type="radio" name="interview_style" value="オンラインで" style="cursor: pointer;"> オンライン
             </label>
           </div>
         </div>
@@ -206,6 +206,8 @@ title: 対談しタグツール
 
         var names = getMemberNames();
         var optionsHtml = "";
+        
+        // ★ポイント: ループ中の名前(n) と 渡された名前(speakerName) が一致したら selected を付与する
         names.forEach(function(n) {
           var selected = (n === speakerName) ? ' selected' : '';
           optionsHtml += '<option value="' + esc(n) + '"' + selected + '>' + esc(n) + '</option>';
@@ -231,6 +233,7 @@ title: 対談しタグツール
           build();
         });
       }
+
 
       // 質問ブロックを追加（デフォルトで人数分の回答欄を自動生成）
       function addQARow(qVal) {
@@ -323,13 +326,25 @@ title: 対談しタグツール
 
         // 2. 取材日・形式注記
         if (dateText) {
-          htmlParts.push('<p>※この取材は' + esc(dateText) + 'に' + esc(styleText) + 'で行われました</p>');
+          htmlParts.push('<p>※この取材は' + esc(dateText) + 'に' + esc(styleText) + '行われました</p>');
         }
 
         // 3. 質問・回答・見出しの走査
         var container = document.getElementById("item_container");
         if (container) {
           var rows = container.getElementsByClassName("item-row");
+
+          // ★追加: 最後に存在する有効な質問ブロック（qa）のインデックスを特定
+          var lastQaIndex = -1;
+          for (var k = rows.length - 1; k >= 0; k--) {
+            if (rows[k].getAttribute("data-type") === "qa") {
+              var qVal = rows[k].querySelector(".input-q").value.trim();
+              if (qVal) {
+                lastQaIndex = k;
+                break;
+              }
+            }
+          }
 
           for (var i = 0; i < rows.length; i++) {
             var row = rows[i];
@@ -357,9 +372,13 @@ title: 対談しタグツール
                   var aText = answerTextarea ? answerTextarea.value.trim() : "";
 
                   if (aText) {
-                    htmlParts.push('<p class="answer"><strong>' + esc(speaker) + '</strong> ' + formatAnswer(aText) + '</p>');
+                    htmlParts.push('<p class="answer"><strong>' + esc(speaker) + '</strong>　' + formatAnswer(aText) + '</p>');
                   }
                 });
+
+                if (i === lastQaIndex) {
+                  htmlParts.push('<p><strong>ーーありがとうございました！</strong></p>');
+                }
               }
             }
           }
@@ -393,7 +412,7 @@ title: 対談しタグツール
         document.getElementById("id_date").value = "";
         document.getElementById("id_member_count").value = "3";
         
-        var defaultRadio = document.querySelector('input[name="interview_style"][value="対面"]');
+        var defaultRadio = document.querySelector('input[name="interview_style"][value=""]');
         if (defaultRadio) defaultRadio.checked = true;
 
         setupDefaultItems();
