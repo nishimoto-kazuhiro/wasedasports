@@ -72,13 +72,11 @@ title: 打者成績表生成ツール
       user-select: none;
       transition: all 0.15s ease;
     }
-    /* H (Hit) アクティブ時：赤色反転 */
     .btn-toggle.btn-hit.active {
       background: #e53935;
       color: #fff;
       border-color: #c62828;
     }
-    /* R (RBI) アクティブ時：青色反転 */
     .btn-toggle.btn-rbi.active {
       background: #1e88e5;
       color: #fff;
@@ -96,13 +94,28 @@ title: 打者成績表生成ツール
       white-space: nowrap;
     }
     .btn-row-action:hover { background: #eef7ff; }
+
+    /* 下部2列並び用レイアウト */
+    .bottom-output-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 2px dashed #e0e0e0;
+    }
+    @media (max-width: 850px) {
+      .bottom-output-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 
   <div class="sp-gen__wrap">
-    <div class="sp-gen__body">
-      <!-- 左側：入力エリア -->
-      <div class="sp-gen__grid">
-        
+    <div class="sp-gen__body" style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- 1. 上段：入力エリア -->
+      <div class="sp-gen__grid" style="width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 打者成績入力</div>
           <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;">基本情報自動保存済み</p>
@@ -135,36 +148,42 @@ title: 打者成績表生成ツール
           <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_inning" type="button" style="border-color: #2e7d32; background-color: #2e7d32; color: #fff;">＋ 延長イニングを追加</button>
           <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear_all" type="button" style="border-color: #cc0000; color: #cc0000;">クリア</button>
         </div>
-
       </div>
 
-      <!-- 右側：出力エリア -->
-      <div class="sp-gen__out-area">
-        <div class="sp-gen__outlabel">
-          <div class="sp-gen__label" style="color: #0066cc;">【出力HTMLコード】</div>
-          <p class="sp-gen__status" id="status">未生成</p>
+      <!-- 2. 下段：出力エリア ＆ プレビューエリア（横並び） -->
+      <div class="bottom-output-grid">
+        
+        <!-- 左側：コード出力エリア -->
+        <div class="sp-gen__out-area">
+          <div class="sp-gen__outlabel" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div class="sp-gen__label" style="color: #0066cc; font-weight: bold;">【出力HTMLコード】</div>
+            <p class="sp-gen__status" id="status" style="font-size: 12px; margin: 0;">未生成</p>
+          </div>
+
+          <textarea class="sp-gen__textarea" id="out" placeholder="ここに生成されたHTMLコードが出力されます" readonly style="min-height: 250px; font-family: monospace; font-size: 11px; width: 100%; box-sizing: border-box;"></textarea>
+
+          <div class="sp-gen__actions" style="margin-top: 8px;">
+            <button class="sp-gen__btn" id="btn_copy" type="button">コードをコピー</button>
+            <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_select" type="button">全選択</button>
+          </div>
         </div>
 
-        <textarea class="sp-gen__textarea" id="out" placeholder="ここに生成されたHTMLコードが出力されます" readonly style="min-height: 250px; font-family: monospace; font-size: 11px;"></textarea>
-
-        <div class="sp-gen__actions">
-          <button class="sp-gen__btn" id="btn_copy" type="button">コードをコピー</button>
-          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_select" type="button">全選択</button>
-        </div>
-
-        <div class="sp-preview" style="margin-top: 15px;">
+        <!-- 右側：簡易プレビューエリア -->
+        <div class="sp-preview">
           <p class="sp-preview__label" style="color: #2e7d32; font-weight: bold; margin-bottom: 6px;">【簡易プレビュー】</p>
-          <div class="sp-preview__box" id="preview" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; overflow-x: auto;"></div>
+          <div class="sp-preview__box" id="preview" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; overflow-x: auto; min-height: 250px; box-sizing: border-box;"></div>
         </div>
+
       </div>
+
     </div>
   </div>
 
   <script>
     (function(){
-      var STORAGE_KEY = "batter_basic_info_data"; // 名前列までの基本情報用キー
-      var PLAYER_DIRECTORY_KEY = "player_reference_links_data"; // 選手名鑑のキー名
-      var totalInnings = 9; // デフォルトは9回まで
+      var STORAGE_KEY = "batter_basic_info_data";
+      var PLAYER_DIRECTORY_KEY = "player_reference_links_data";
+      var totalInnings = 9;
 
       function esc(s){
         return String(s ?? "")
@@ -172,7 +191,6 @@ title: 打者成績表生成ツール
           .replaceAll('"',"&quot;").replaceAll("'","&#39;");
       }
 
-      // 選手名鑑から「名前 -> URL」のマップ辞書を取得
       function getPlayerDirectoryMap() {
         var map = {};
         try {
@@ -193,7 +211,6 @@ title: 打者成績表生成ツール
         return map;
       }
 
-      // テーブルヘッダーのイニングセルを描画
       function renderHeaderInnings() {
         var tr = document.getElementById("thead_row");
         if (!tr) return;
@@ -222,8 +239,7 @@ title: 打者成績表生成ツール
         tr.appendChild(thDel);
       }
 
-      // 行の追加（data: 復元用データ, targetTr: 指定行の前に挿入）
-      function addRow(data, targetTr) {
+      function addRow(data, baseTr) {
         var tbody = document.getElementById("stats_tbody");
         if (!tbody) return;
 
@@ -240,7 +256,6 @@ title: 打者成績表生成ツール
           '<td><input type="text" class="inp-stat inp-ten" value="' + esc(d.ten || "") + '"></td>' +
           '<td><input type="text" class="inp-stat inp-ritsu" value="' + esc(d.ritsu || "") + '"></td>';
 
-        // イニング数分の打席結果セルを追加（H/Rボタン配置）
         for (var i = 0; i < totalInnings; i++) {
           html += 
             '<td>' +
@@ -258,13 +273,13 @@ title: 打者成績表生成ツール
 
         tr.innerHTML = html;
 
-        if (targetTr) {
-          tbody.insertBefore(tr, targetTr);
+        // 指定行（baseTr）の下に追加
+        if (baseTr) {
+          tbody.insertBefore(tr, baseTr.nextElementSibling);
         } else {
           tbody.appendChild(tr);
         }
 
-        // イベント設定
         var textInputs = tr.querySelectorAll('input[type="text"]');
         textInputs.forEach(function(inp) {
           inp.addEventListener("input", function() {
@@ -273,7 +288,6 @@ title: 打者成績表生成ツール
           });
         });
 
-        // H / R ボタンクリックイベント
         var toggleBtns = tr.querySelectorAll(".btn-toggle");
         toggleBtns.forEach(function(btn) {
           btn.addEventListener("click", function() {
@@ -282,13 +296,11 @@ title: 打者成績表生成ツール
           });
         });
 
-        // 途中に挿入ボタン
         tr.querySelector(".btn-insert").addEventListener("click", function() {
           addRow(null, tr);
           build();
         });
 
-        // 削除ボタン
         tr.querySelector(".btn-del").addEventListener("click", function() {
           tr.remove();
           saveBasicInfo();
@@ -296,26 +308,23 @@ title: 打者成績表生成ツール
         });
       }
 
-      // デフォルトで指定した行数を一括生成
       function initDefaultRows(count) {
         var tbody = document.getElementById("stats_tbody");
         if (tbody) tbody.innerHTML = "";
         
         for (var i = 1; i <= count; i++) {
-          // 打順1〜9の数値をあらかじめ初期値として入力
           var defaultOrder = (i <= 9) ? String(i) : "";
           addRow({ order: defaultOrder });
         }
       }
 
-      // 延長イニングを追加する際、既存のすべての行に新イニングセルを追加
       function addInningColumn() {
         totalInnings++;
         renderHeaderInnings();
 
         var rows = document.querySelectorAll("#stats_tbody tr");
         rows.forEach(function(tr) {
-          var delTd = tr.lastElementChild; // 最後の削除ボタンTD
+          var delTd = tr.lastElementChild;
 
           var newTd = document.createElement("td");
           newTd.innerHTML = 
@@ -344,7 +353,6 @@ title: 打者成績表生成ツール
         build();
       }
 
-      // 打順・守備・名前（名前列まで）の情報をlocalStorageに保存
       function saveBasicInfo() {
         var rows = document.querySelectorAll("#stats_tbody tr");
         var list = [];
@@ -366,7 +374,6 @@ title: 打者成績表生成ツール
         } catch(e) {}
       }
 
-      // 基本情報の復元
       function loadBasicInfo() {
         var raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return false;
@@ -381,7 +388,6 @@ title: 打者成績表生成ツール
         return false;
       }
 
-      // HTML出力の生成処理
       function build() {
         var rows = document.querySelectorAll("#stats_tbody tr");
         var directoryMap = getPlayerDirectoryMap();
@@ -422,7 +428,6 @@ title: 打者成績表生成ツール
             html += '<td>' + esc(order) + '</td>\n';
             html += '<td>' + esc(pos) + '</td>\n';
 
-            // 名前の照合とリンク生成
             var matchedUrl = directoryMap[name];
             if (matchedUrl) {
               var href = matchedUrl.match(/^https?:\/\//) ? matchedUrl : "https://" + matchedUrl;
@@ -436,7 +441,6 @@ title: 打者成績表生成ツール
             html += '<td>' + esc(ten) + '</td>\n';
             html += '<td>' + esc(ritsu) + '</td>\n';
 
-            // 各イニング打席の判定（H/Rトグルボタンの活性状態を判定）
             var inningCells = tr.querySelectorAll(".inning-cell");
             inningCells.forEach(function(cell) {
               var resVal = cell.querySelector(".inp-res").value.trim();
@@ -484,7 +488,7 @@ title: 打者成績表生成ツール
         try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
         totalInnings = 9;
         renderHeaderInnings();
-        initDefaultRows(9); // 初期状態の9行に戻す
+        initDefaultRows(9);
         build();
       }
 
@@ -522,7 +526,6 @@ title: 打者成績表生成ツール
           t.focus(); t.select();
         });
 
-        // 保存された基本情報を復元（なければデフォルト9行生成）
         if (!loadBasicInfo()) {
           initDefaultRows(9);
         }
