@@ -1,12 +1,13 @@
 ---
 layout: default
-title: 選手参照リンク管理
+title: 野球　選手名鑑登録
 ---
 
 <main>
 <header class="sp-gen__head">
-  <h1>選手参照リンク管理</h1>
-  <p class="sp-gen__desc">対談や記事作成で参照する選手名とURLを一覧（表形式）で管理できます。</p>
+  <h1>野球　選手名鑑登録</h1>
+  <p class="sp-gen__desc">成績表などに反映させる選手名鑑のリンクを登録するページです。</p>
+  <p class="sp-gen__desc">入力した情報はお使いのブラウザ内に保存されますが、ネットワーク上に送信される頃はありません。また、他デバイスや他ユーザー間でデータを連携することはできません。</p>
 </header>
 
 <section class="sp-gen" aria-label="選手参照リンク管理">
@@ -77,8 +78,8 @@ title: 選手参照リンク管理
       <div class="sp-gen__grid" style="width: 100%;">
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 参照選手一覧</div>
-          <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;">自動保存完了</p>
+          <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 選手一覧</div>
+          <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;"></p>
         </div>
 
         <!-- 選手一覧テーブル -->
@@ -184,7 +185,7 @@ title: 選手参照リンク管理
           '</td>' +
           '<td>' +
           '  <div style="display: flex; align-items: center;">' +
-          '    <input class="sp-gen__input inp-player-url" placeholder="例：https://example.com/player" value="' + esc(valUrl) + '" style="padding: 4px 8px; flex-grow: 1;">' +
+          '    <input class="sp-gen__input inp-player-url" placeholder="例：https://wasedasports-sousupo.com/..." value="' + esc(valUrl) + '" style="padding: 4px 8px; flex-grow: 1;">' +
           '    <span class="link-container"></span>' +
           '  </div>' +
           '</td>' +
