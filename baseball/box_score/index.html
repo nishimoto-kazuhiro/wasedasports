@@ -1,0 +1,289 @@
+---
+layout: default
+title: 選手参照リンクメモ
+---
+
+<main>
+<header class="sp-gen__head">
+  <h1>選手参照リンクメモ</h1>
+  <p class="sp-gen__desc">別の作業で参照する選手名と詳細リンク（公式サイト、SNS、Wikiなど）を入力・保存しておける管理用ツールです。</p>
+</header>
+
+<section class="sp-gen" aria-label="選手参照リンクメモ">
+  <style>
+    /* 選手リンクツール用のスタイリング */
+    .link-list-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .player-card {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 14px;
+      position: relative;
+    }
+    .player-card__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .player-card__num {
+      font-weight: bold;
+      color: #0066cc;
+      font-size: 14px;
+    }
+    .player-card__grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 600px) {
+      .player-card__grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .player-card__btn-del {
+      background: none;
+      border: 1px solid #cc0000;
+      color: #cc0000;
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .player-card__btn-del:hover {
+      background: #cc0000;
+      color: #fff;
+    }
+    .player-card__link-preview {
+      margin-top: 6px;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .player-card__link-preview a {
+      color: #0066cc;
+      text-decoration: underline;
+    }
+  </style>
+
+  <div class="sp-gen__wrap">
+    <div class="sp-gen__body">
+      
+      <!-- 入力・管理メインコンテナ -->
+      <div class="sp-gen__grid" style="width: 100%;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 参照選手一覧</div>
+          <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;">自動保存完了</p>
+        </div>
+
+        <!-- 選手カードの動的コンテナ -->
+        <div class="link-list-box" id="player_container"></div>
+
+        <!-- 操作ボタンエリア -->
+        <div class="sp-gen__actions" style="margin-top: 10px;">
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_player" type="button" style="border-color: #0066cc; background-color: #0066cc; color: #fff;">＋ 選手を追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear_all" type="button" style="border-color: #cc0000; color: #cc0000;">全データ消去</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var STORAGE_KEY = "player_reference_links_data";
+      var playerCount = 0;
+
+      function esc(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      }
+
+      // 入力データをlocalStorageに保存
+      function saveData() {
+        var players = [];
+        var cards = document.querySelectorAll(".player-card");
+
+        cards.forEach(function(card) {
+          var nameInp = card.querySelector(".inp-player-name");
+          var urlInp = card.querySelector(".inp-player-url");
+          var memoInp = card.querySelector(".inp-player-memo");
+
+          players.push({
+            name: nameInp ? nameInp.value : "",
+            url: urlInp ? urlInp.value : "",
+            memo: memoInp ? memoInp.value : ""
+          });
+        });
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+          var statusEl = document.getElementById("save_status");
+          if (statusEl) {
+            statusEl.textContent = "自動保存済み (" + new Date().toLocaleTimeString() + ")";
+          }
+        } catch(e) {}
+      }
+
+      // リンクプレビューの更新
+      function updateLinkPreview(card) {
+        var urlInp = card.querySelector(".inp-player-url");
+        var previewDiv = card.querySelector(".player-card__link-preview");
+        if (!urlInp || !previewDiv) return;
+
+        var url = urlInp.value.trim();
+        if (url) {
+          var href = url.match(/^https?:\/\//) ? url : "https://" + url;
+          previewDiv.innerHTML = '🔗 リンク確認: <a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(url) + ' ↗</a>';
+        } else {
+          previewDiv.innerHTML = "";
+        }
+      }
+
+      // 選手カードの追加
+      function addPlayerCard(data) {
+        playerCount++;
+        var container = document.getElementById("player_container");
+        if (!container) return;
+
+        var card = document.createElement("div");
+        card.className = "player-card";
+        card.id = "player_card_" + playerCount;
+
+        var valName = data ? data.name : "";
+        var valUrl = data ? data.url : "";
+        var valMemo = data ? data.memo : "";
+
+        card.innerHTML = 
+          '<div class="player-card__head">' +
+          '  <span class="player-card__num">選手 ' + playerCount + '</span>' +
+          '  <button type="button" class="player-card__btn-del">削除</button>' +
+          '</div>' +
+          '<div class="player-card__grid">' +
+          '  <div>' +
+          '    <div class="sp-gen__label" style="font-size: 12px;">選手名（ふりがな等）</div>' +
+          '    <input class="sp-gen__input inp-player-name" placeholder="例：寺尾拳聖（てらお・けんせい）" value="' + esc(valName) + '">' +
+          '  </div>' +
+          '  <div>' +
+          '    <div class="sp-gen__label" style="font-size: 12px;">参照URL（詳細・SNS・Wiki等）</div>' +
+          '    <input class="sp-gen__input inp-player-url" placeholder="例：https://example.com/player/123" value="' + esc(valUrl) + '">' +
+          '    <div class="player-card__link-preview"></div>' +
+          '  </div>' +
+          '</div>' +
+          '<div style="margin-top: 8px;">' +
+          '  <div class="sp-gen__label" style="font-size: 12px;">メモ（経歴・背番号・ポジションなど）</div>' +
+          '  <textarea class="sp-gen__textarea inp-player-memo" style="min-height: 50px;" placeholder="例：早稲田大 4年 / 外野手 / 背番号10">' + esc(valMemo) + '</textarea>' +
+          '</div>';
+
+        container.appendChild(card);
+
+        var nameInp = card.querySelector(".inp-player-name");
+        var urlInp = card.querySelector(".inp-player-url");
+        var memoInp = card.querySelector(".inp-player-memo");
+        var delBtn = card.querySelector(".player-card__btn-del");
+
+        // 入力イベントで即時保存
+        nameInp.addEventListener("input", saveData);
+        urlInp.addEventListener("input", function() {
+          updateLinkPreview(card);
+          saveData();
+        });
+        memoInp.addEventListener("input", saveData);
+
+        // 削除ボタンイベント
+        delBtn.addEventListener("click", function() {
+          card.remove();
+          renumberCards();
+          saveData();
+        });
+
+        // リンクプレビューの初期描画
+        updateLinkPreview(card);
+      }
+
+      // 番号の振り直し
+      function renumberCards() {
+        var cards = document.querySelectorAll(".player-card");
+        playerCount = 0;
+        cards.forEach(function(card) {
+          playerCount++;
+          var numEl = card.querySelector(".player-card__num");
+          if (numEl) numEl.textContent = "選手 " + playerCount;
+        });
+      }
+
+      // 保存データの復元
+      function loadData() {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+
+        try {
+          var players = JSON.parse(raw);
+          if (Array.isArray(players) && players.length > 0) {
+            var container = document.getElementById("player_container");
+            if (container) container.innerHTML = "";
+            playerCount = 0;
+
+            players.forEach(function(pData) {
+              addPlayerCard(pData);
+            });
+            return true;
+          }
+        } catch(e) {}
+        return false;
+      }
+
+      // 全クリア処理
+      function clearAll() {
+        if (!confirm("保存されているすべての選手データを削除しますか？")) return;
+
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch(e) {}
+
+        var container = document.getElementById("player_container");
+        if (container) container.innerHTML = "";
+        playerCount = 0;
+
+        // デフォルトで1人目を作成
+        addPlayerCard();
+        saveData();
+      }
+
+      function init() {
+        var btnAdd = document.getElementById("btn_add_player");
+        var btnClear = document.getElementById("btn_clear_all");
+
+        if (btnAdd) {
+          btnAdd.addEventListener("click", function() {
+            addPlayerCard();
+            saveData();
+          });
+        }
+
+        if (btnClear) {
+          btnClear.addEventListener("click", clearAll);
+        }
+
+        // 復元処理（データがない場合は1人分追加）
+        if (!loadData()) {
+          addPlayerCard();
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</section>
+</main>
