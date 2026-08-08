@@ -51,7 +51,6 @@ title: 投手成績表生成ツール
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 投手成績入力</div>
-          <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;">自動保存完了</p>
         </div>
 
         <div class="stats-table-wrap">
@@ -109,8 +108,7 @@ title: 投手成績表生成ツール
 
   <script>
     (function(){
-      var STORAGE_KEY = "pitcher_stats_tool_data";
-      var PLAYER_DIRECTORY_KEY = "player_reference_links_data"; // 選手名鑑のキー名
+      var PLAYER_DIRECTORY_KEY = "player_reference_links_data"; // 選手名鑑のキー名（参照用）
 
       function esc(s){
         return String(s ?? "")
@@ -118,7 +116,7 @@ title: 投手成績表生成ツール
           .replaceAll('"',"&quot;").replaceAll("'","&#39;");
       }
 
-      // 選手名鑑から「名前 -> URL」のマップ辞書を取得する関数
+      // 選手名鑑から「名前 -> URL」のマップ辞書を取得
       function getPlayerDirectoryMap() {
         var map = {};
         try {
@@ -139,25 +137,24 @@ title: 投手成績表生成ツール
         return map;
       }
 
-      function addRow(data) {
+      function addRow() {
         var tbody = document.getElementById("stats_tbody");
         if (!tbody) return;
 
         var tr = document.createElement("tr");
-        var d = data || {};
 
         tr.innerHTML = 
-          '<td><input class="inp-name" value="' + esc(d.name || "") + '" placeholder="宮城誇南"></td>' +
-          '<td><input class="inp-num inp-shi" value="' + esc(d.shi || "") + '"></td>' +
-          '<td><input class="inp-num inp-sho" value="' + esc(d.sho || "") + '"></td>' +
-          '<td><input class="inp-num inp-fu" value="' + esc(d.fu || "") + '"></td>' +
-          '<td><input class="inp-num inp-kai" value="' + esc(d.kai || "") + '"></td>' +
-          '<td><input class="inp-num inp-an" value="' + esc(d.an || "") + '"></td>' +
-          '<td><input class="inp-num inp-kyu" value="' + esc(d.kyu || "") + '"></td>' +
-          '<td><input class="inp-num inp-shin" value="' + esc(d.shin || "") + '"></td>' +
-          '<td><input class="inp-num inp-shitsu" value="' + esc(d.shitsu || "") + '"></td>' +
-          '<td><input class="inp-num inp-seki" value="' + esc(d.seki || "") + '"></td>' +
-          '<td><input class="inp-num inp-ritsu" value="' + esc(d.ritsu || "") + '"></td>' +
+          '<td><input class="inp-name" value=""></td>' +
+          '<td><input class="inp-num inp-shi" value=""></td>' +
+          '<td><input class="inp-num inp-sho" value=""></td>' +
+          '<td><input class="inp-num inp-fu" value=""></td>' +
+          '<td><input class="inp-num inp-kai" value=""></td>' +
+          '<td><input class="inp-num inp-an" value=""></td>' +
+          '<td><input class="inp-num inp-kyu" value=""></td>' +
+          '<td><input class="inp-num inp-shin" value=""></td>' +
+          '<td><input class="inp-num inp-shitsu" value=""></td>' +
+          '<td><input class="inp-num inp-seki" value=""></td>' +
+          '<td><input class="inp-num inp-ritsu" value=""></td>' +
           '<td><button type="button" class="btn-del" style="color:#cc0000; border:none; background:none; cursor:pointer;">✕</button></td>';
 
         tbody.appendChild(tr);
@@ -175,8 +172,8 @@ title: 投手成績表生成ツール
 
       function build() {
         var rows = document.querySelectorAll("#stats_tbody tr");
-        var list = [];
-        var directoryMap = getPlayerDirectoryMap(); // 選手名鑑データを取得
+        var directoryMap = getPlayerDirectoryMap();
+        var hasValidRow = false;
 
         var html = '<div class="table-container">\n';
         html += '<table class="baseball-data-table">\n';
@@ -208,12 +205,10 @@ title: 投手成績表生成ツール
           var seki = tr.querySelector(".inp-seki").value.trim();
           var ritsu = tr.querySelector(".inp-ritsu").value.trim();
 
-          list.push({ name, shi, sho, fu, kai, an, kyu, shin, shitsu, seki, ritsu });
-
           if (name) {
+            hasValidRow = true;
             html += '<tr>\n';
             
-            // 選手名鑑に一致する名前が存在するかチェック
             var matchedUrl = directoryMap[name];
 
             if (matchedUrl) {
@@ -241,36 +236,24 @@ title: 投手成績表生成ツール
         html += '</table>\n';
         html += '</div>';
 
-        document.getElementById("out").value = html;
-        document.getElementById("preview").innerHTML = html;
-        document.getElementById("status").textContent = html ? "生成OK" : "未生成";
+        var outEl = document.getElementById("out");
+        var previewEl = document.getElementById("preview");
+        var statusEl = document.getElementById("status");
 
-        // localStorageに保存
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-          document.getElementById("save_status").textContent = "自動保存済み (" + new Date().toLocaleTimeString() + ")";
-        } catch(e) {}
-      }
-
-      function loadData() {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return false;
-        try {
-          var list = JSON.parse(raw);
-          if (Array.isArray(list) && list.length > 0) {
-            document.getElementById("stats_tbody").innerHTML = "";
-            list.forEach(function(d) { addRow(d); });
-            return true;
-          }
-        } catch(e) {}
-        return false;
+        if (hasValidRow) {
+          outEl.value = html;
+          previewEl.innerHTML = html;
+          statusEl.textContent = "生成OK";
+        } else {
+          outEl.value = "";
+          previewEl.innerHTML = "";
+          statusEl.textContent = "未生成";
+        }
       }
 
       function clearAll() {
-        if (!confirm("入力データをクリアしますか？")) return;
-        try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
         document.getElementById("stats_tbody").innerHTML = "";
-        addRow();
+        addRow(); // 空の1行のみ追加
         build();
       }
 
@@ -301,11 +284,8 @@ title: 投手成績表生成ツール
           t.focus(); t.select();
         });
 
-        if (!loadData()) {
-          // 初期サンプルデータの設定
-          addRow({ name: "宮城誇南", shi: "７", sho: "０", fu: "４", kai: "２", an: "２", kyu: "２", shin: "２", shitsu: "１", seki: "２", ritsu: "6.38" });
-          addRow({ name: "岡村遼太郎", shi: "３", sho: "１", fu: "０", kai: "１0/3", an: "２", kyu: "１", shin: "０", shitsu: "２", seki: "２", ritsu: "6.00" });
-        }
+        // 起動時は常に空の1行を追加
+        addRow();
         build();
       }
 
