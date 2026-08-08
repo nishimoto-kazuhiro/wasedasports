@@ -1,0 +1,282 @@
+---
+layout: default
+title: 選手参照リンク管理
+---
+
+<main>
+<header class="sp-gen__head">
+  <h1>選手参照リンク管理</h1>
+  <p class="sp-gen__desc">対談や記事作成で参照する選手名とURLを一覧（表形式）で管理できます。</p>
+</header>
+
+<section class="sp-gen" aria-label="選手参照リンク管理">
+  <style>
+    /* テーブル用スタイル */
+    .player-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+    .player-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 14px;
+    }
+    .player-table th, .player-table td {
+      border: 1px solid #e0e0e0;
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+    .player-table th {
+      background: #f4f6f9;
+      color: #333;
+      font-weight: bold;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .player-table td.col-num {
+      width: 50px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+    }
+    .player-table td.col-action {
+      width: 60px;
+      text-align: center;
+    }
+    .btn-table-del {
+      background: none;
+      border: 1px solid #cc0000;
+      color: #cc0000;
+      border-radius: 4px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-table-del:hover {
+      background: #cc0000;
+      color: #fff;
+    }
+    .link-open-btn {
+      display: inline-block;
+      margin-left: 6px;
+      color: #0066cc;
+      text-decoration: none;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .link-open-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <div class="sp-gen__wrap">
+    <div class="sp-gen__body">
+      
+      <div class="sp-gen__grid" style="width: 100%;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 参照選手一覧</div>
+          <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;">自動保存完了</p>
+        </div>
+
+        <!-- 選手一覧テーブル -->
+        <div class="player-table-wrap">
+          <table class="player-table">
+            <thead>
+              <tr>
+                <th class="col-num">No.</th>
+                <th style="width: 30%;">選手名</th>
+                <th style="width: 60%;">参照URL</th>
+                <th class="col-action">操作</th>
+              </tr>
+            </thead>
+            <tbody id="player_tbody">
+              <!-- 動的に行が追加されます -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 操作ボタンエリア -->
+        <div class="sp-gen__actions" style="margin-top: 12px;">
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_row" type="button" style="border-color: #0066cc; background-color: #0066cc; color: #fff;">＋ 選手を追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear_all" type="button" style="border-color: #cc0000; color: #cc0000;">全データ消去</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var STORAGE_KEY = "player_reference_links_data";
+
+      function esc(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      }
+
+      // データの保存
+      function saveData() {
+        var players = [];
+        var rows = document.querySelectorAll("#player_tbody tr");
+
+        rows.forEach(function(tr) {
+          var nameInp = tr.querySelector(".inp-player-name");
+          var urlInp = tr.querySelector(".inp-player-url");
+
+          players.push({
+            name: nameInp ? nameInp.value : "",
+            url: urlInp ? urlInp.value : ""
+          });
+        });
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+          var statusEl = document.getElementById("save_status");
+          if (statusEl) {
+            statusEl.textContent = "自動保存済み (" + new Date().toLocaleTimeString() + ")";
+          }
+        } catch(e) {}
+      }
+
+      // リンクボタンの更新
+      function updateLinkButton(tr) {
+        var urlInp = tr.querySelector(".inp-player-url");
+        var linkContainer = tr.querySelector(".link-container");
+        if (!urlInp || !linkContainer) return;
+
+        var url = urlInp.value.trim();
+        if (url) {
+          var href = url.match(/^https?:\/\//) ? url : "https://" + url;
+          linkContainer.innerHTML = '<a href="' + esc(href) + '" class="link-open-btn" target="_blank" rel="noopener noreferrer">開く ↗</a>';
+        } else {
+          linkContainer.innerHTML = "";
+        }
+      }
+
+      // 行の番号振り直し
+      function renumberRows() {
+        var rows = document.querySelectorAll("#player_tbody tr");
+        rows.forEach(function(tr, idx) {
+          var numTd = tr.querySelector(".col-num");
+          if (numTd) numTd.textContent = idx + 1;
+        });
+      }
+
+      // テーブル行の追加
+      function addPlayerRow(data) {
+        var tbody = document.getElementById("player_tbody");
+        if (!tbody) return;
+
+        var tr = document.createElement("tr");
+
+        var valName = data ? data.name : "";
+        var valUrl = data ? data.url : "";
+
+        tr.innerHTML = 
+          '<td class="col-num"></td>' +
+          '<td>' +
+          '  <input class="sp-gen__input inp-player-name" placeholder="例：寺尾拳聖" value="' + esc(valName) + '" style="padding: 4px 8px;">' +
+          '</td>' +
+          '<td>' +
+          '  <div style="display: flex; align-items: center;">' +
+          '    <input class="sp-gen__input inp-player-url" placeholder="例：https://example.com/player" value="' + esc(valUrl) + '" style="padding: 4px 8px; flex-grow: 1;">' +
+          '    <span class="link-container"></span>' +
+          '  </div>' +
+          '</td>' +
+          '<td class="col-action">' +
+          '  <button type="button" class="btn-table-del">削除</button>' +
+          '</td>';
+
+        tbody.appendChild(tr);
+
+        var nameInp = tr.querySelector(".inp-player-name");
+        var urlInp = tr.querySelector(".inp-player-url");
+        var delBtn = tr.querySelector(".btn-table-del");
+
+        // 入力イベントで自動保存
+        nameInp.addEventListener("input", saveData);
+        urlInp.addEventListener("input", function() {
+          updateLinkButton(tr);
+          saveData();
+        });
+
+        // 削除ボタン処理
+        delBtn.addEventListener("click", function() {
+          tr.remove();
+          renumberRows();
+          saveData();
+        });
+
+        updateLinkButton(tr);
+        renumberRows();
+      }
+
+      // 保存データの復元
+      function loadData() {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+
+        try {
+          var players = JSON.parse(raw);
+          if (Array.isArray(players) && players.length > 0) {
+            var tbody = document.getElementById("player_tbody");
+            if (tbody) tbody.innerHTML = "";
+
+            players.forEach(function(pData) {
+              addPlayerRow(pData);
+            });
+            return true;
+          }
+        } catch(e) {}
+        return false;
+      }
+
+      // 全消去
+      function clearAll() {
+        if (!confirm("登録されているすべての選手データを削除しますか？")) return;
+
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch(e) {}
+
+        var tbody = document.getElementById("player_tbody");
+        if (tbody) tbody.innerHTML = "";
+
+        addPlayerRow();
+        saveData();
+      }
+
+      function init() {
+        var btnAdd = document.getElementById("btn_add_row");
+        var btnClear = document.getElementById("btn_clear_all");
+
+        if (btnAdd) {
+          btnAdd.addEventListener("click", function() {
+            addPlayerRow();
+            saveData();
+          });
+        }
+
+        if (btnClear) {
+          btnClear.addEventListener("click", clearAll);
+        }
+
+        if (!loadData()) {
+          addPlayerRow();
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</section>
+</main>
