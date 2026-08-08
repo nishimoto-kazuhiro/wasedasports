@@ -1,0 +1,503 @@
+---
+layout: default
+title: 打者成績表生成ツール
+---
+
+<main>
+<header class="sp-gen__head">
+  <h1>打者成績表タグ生成ツール</h1>
+  <p class="sp-gen__desc">打者の成績・イニングごとの打席結果を入力し、HTMLテーブルコードを生成します。ヒットや打点クラスの自動付与・延長イニングに対応しています。</p>
+</header>
+
+<section class="sp-gen" aria-label="打者成績表生成ツール">
+  <style>
+    .stats-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #fff;
+      min-width: 900px;
+    }
+    .stats-table th, .stats-table td {
+      border: 1px solid #ccc;
+      padding: 4px 2px;
+      text-align: center;
+      vertical-align: top;
+    }
+    .stats-table th {
+      background: #f4f4f4;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .stats-table input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 3px 2px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .stats-table input.inp-order { width: 35px; text-align: center; }
+    .stats-table input.inp-pos { width: 50px; text-align: center; }
+    .stats-table input.inp-name { width: 90px; }
+    .stats-table input.inp-stat { width: 35px; text-align: center; }
+    .stats-table input.inp-res { width: 55px; text-align: center; }
+    
+    .inning-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .chk-group {
+      display: flex;
+      gap: 3px;
+      font-size: 10px;
+      color: #555;
+    }
+    .chk-group label {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 1px;
+    }
+    .btn-row-action {
+      background: none;
+      border: 1px solid #0066cc;
+      color: #0066cc;
+      border-radius: 3px;
+      font-size: 10px;
+      padding: 1px 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-row-action:hover { background: #eef7ff; }
+  </style>
+
+  <div class="sp-gen__wrap">
+    <div class="sp-gen__body">
+      <!-- 左側：入力エリア -->
+      <div class="sp-gen__grid">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div class="sp-gen__label" style="font-size: 16px; color: #333;">◆ 打者成績入力</div>
+          <p class="sp-gen__status" id="save_status" style="font-size: 12px; color: #2e7d32;">基本情報自動保存済み</p>
+        </div>
+
+        <div class="stats-table-wrap">
+          <table class="stats-table" id="batter_input_table">
+            <thead>
+              <tr id="thead_row">
+                <th style="width: 40px;">挿入</th>
+                <th>打順</th>
+                <th>守備</th>
+                <th>名前</th>
+                <th>打</th>
+                <th>安</th>
+                <th>点</th>
+                <th>率</th>
+                <!-- イニング(1〜9...)がJavaScriptで追加されます -->
+                <th style="width: 35px;">削除</th>
+              </tr>
+            </thead>
+            <tbody id="stats_tbody">
+              <!-- 動的に追加されます -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="sp-gen__actions" style="margin-top: 10px;">
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_row" type="button" style="border-color: #0066cc; background-color: #0066cc; color: #fff;">＋ 最後に打者を追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_add_inning" type="button" style="border-color: #2e7d32; background-color: #2e7d32; color: #fff;">＋ 延長イニングを追加</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_clear_all" type="button" style="border-color: #cc0000; color: #cc0000;">クリア</button>
+        </div>
+
+      </div>
+
+      <!-- 右側：出力エリア -->
+      <div class="sp-gen__out-area">
+        <div class="sp-gen__outlabel">
+          <div class="sp-gen__label" style="color: #0066cc;">【出力HTMLコード】</div>
+          <p class="sp-gen__status" id="status">未生成</p>
+        </div>
+
+        <textarea class="sp-gen__textarea" id="out" placeholder="ここに生成されたHTMLコードが出力されます" readonly style="min-height: 250px; font-family: monospace; font-size: 11px;"></textarea>
+
+        <div class="sp-gen__actions">
+          <button class="sp-gen__btn" id="btn_copy" type="button">コードをコピー</button>
+          <button class="sp-gen__btn sp-gen__btn--ghost" id="btn_select" type="button">全選択</button>
+        </div>
+
+        <div class="sp-preview" style="margin-top: 15px;">
+          <p class="sp-preview__label" style="color: #2e7d32; font-weight: bold; margin-bottom: 6px;">【簡易プレビュー】</p>
+          <div class="sp-preview__box" id="preview" style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd; overflow-x: auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var STORAGE_KEY = "batter_basic_info_data"; // 名前列までの基本情報用キー
+      var PLAYER_DIRECTORY_KEY = "player_reference_links_data"; // 選手名鑑のキー名
+      var totalInnings = 9; // デフォルトは9回まで
+
+      function esc(s){
+        return String(s ?? "")
+          .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+          .replaceAll('"',"&quot;").replaceAll("'","&#39;");
+      }
+
+      // 選手名鑑から「名前 -> URL」のマップ辞書を取得
+      function getPlayerDirectoryMap() {
+        var map = {};
+        try {
+          var raw = localStorage.getItem(PLAYER_DIRECTORY_KEY);
+          if (raw) {
+            var list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              list.forEach(function(item) {
+                var name = (item.name || "").trim();
+                var url = (item.url || "").trim();
+                if (name && url) {
+                  map[name] = url;
+                }
+              });
+            }
+          }
+        } catch(e) {}
+        return map;
+      }
+
+      // テーブルヘッダーのイニングセルを再描画
+      function renderHeaderInnings() {
+        var tr = document.getElementById("thead_row");
+        if (!tr) return;
+
+        // 一度すべてのthを削除して再構築
+        tr.innerHTML = 
+          '<th style="width: 40px;">挿入</th>' +
+          '<th>打順</th>' +
+          '<th>守備</th>' +
+          '<th>名前</th>' +
+          '<th>打</th>' +
+          '<th>安</th>' +
+          '<th>点</th>' +
+          '<th>率</th>';
+
+        for (var i = 1; i <= totalInnings; i++) {
+          var th = document.createElement("th");
+          // 全角数字に変換して表示
+          th.textContent = String(i).replace(/[0-9]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
+          });
+          tr.appendChild(th);
+        }
+
+        var thDel = document.createElement("th");
+        thDel.style.width = "35px";
+        thDel.textContent = "削除";
+        tr.appendChild(thDel);
+      }
+
+      // 行の追加（data: 復元用データ, targetTr: 指定行の前に挿入）
+      function addRow(data, targetTr) {
+        var tbody = document.getElementById("stats_tbody");
+        if (!tbody) return;
+
+        var tr = document.createElement("tr");
+        var d = data || {};
+
+        var html = 
+          '<td><button type="button" class="btn-row-action btn-insert">＋</button></td>' +
+          '<td><input class="inp-order" value="' + esc(d.order || "") + '"></td>' +
+          '<td><input class="inp-pos" value="' + esc(d.pos || "") + '"></td>' +
+          '<td><input class="inp-name" value="' + esc(d.name || "") + '"></td>' +
+          '<td><input class="inp-stat inp-da" value="' + esc(d.da || "") + '"></td>' +
+          '<td><input class="inp-stat inp-an" value="' + esc(d.an || "") + '"></td>' +
+          '<td><input class="inp-stat inp-ten" value="' + esc(d.ten || "") + '"></td>' +
+          '<td><input class="inp-stat inp-ritsu" value="' + esc(d.ritsu || "") + '"></td>';
+
+        // イニング数分の打席結果セルを追加
+        for (var i = 0; i < totalInnings; i++) {
+          html += 
+            '<td>' +
+            '  <div class="inning-cell">' +
+            '    <input class="inp-res" value="">' +
+            '    <div class="chk-group">' +
+            '      <label><input type="checkbox" class="chk-hit">H</label>' +
+            '      <label><input type="checkbox" class="chk-rbi">R</label>' +
+            '    </div>' +
+            '  </div>' +
+            '</td>';
+        }
+
+        html += '<td><button type="button" class="btn-del" style="color:#cc0000; border:none; background:none; cursor:pointer;">✕</button></td>';
+
+        tr.innerHTML = html;
+
+        if (targetTr) {
+          tbody.insertBefore(tr, targetTr);
+        } else {
+          tbody.appendChild(tr);
+        }
+
+        // イベント設定
+        var inputs = tr.querySelectorAll("input");
+        inputs.forEach(function(inp) {
+          inp.addEventListener("input", function() {
+            saveBasicInfo();
+            build();
+          });
+          if (inp.type === "checkbox") {
+            inp.addEventListener("change", build);
+          }
+        });
+
+        // 途中に挿入ボタン
+        tr.querySelector(".btn-insert").addEventListener("click", function() {
+          addRow(null, tr);
+          build();
+        });
+
+        // 削除ボタン
+        tr.querySelector(".btn-del").addEventListener("click", function() {
+          tr.remove();
+          saveBasicInfo();
+          build();
+        });
+      }
+
+      // 延長イニングを追加する際、既存のすべての行に新イニングセルを追加
+      function addInningColumn() {
+        totalInnings++;
+        renderHeaderInnings();
+
+        var rows = document.querySelectorAll("#stats_tbody tr");
+        rows.forEach(function(tr) {
+          var delTd = tr.lastElementChild; // 最後の削除ボタンTD
+
+          var newTd = document.createElement("td");
+          newTd.innerHTML = 
+            '<div class="inning-cell">' +
+            '  <input class="inp-res" value="">' +
+            '  <div class="chk-group">' +
+            '    <label><input type="checkbox" class="chk-hit">H</label>' +
+            '    <label><input type="checkbox" class="chk-rbi">R</label>' +
+            '  </div>' +
+            '</div>';
+
+          var inputs = newTd.querySelectorAll("input");
+          inputs.forEach(function(inp) {
+            inp.addEventListener("input", build);
+            if (inp.type === "checkbox") inp.addEventListener("change", build);
+          });
+
+          tr.insertBefore(newTd, delTd);
+        });
+
+        build();
+      }
+
+      // 打順・守備・名前（名前列まで）の情報をlocalStorageに保存
+      function saveBasicInfo() {
+        var rows = document.querySelectorAll("#stats_tbody tr");
+        var list = [];
+
+        rows.forEach(function(tr) {
+          var order = tr.querySelector(".inp-order").value.trim();
+          var pos = tr.querySelector(".inp-pos").value.trim();
+          var name = tr.querySelector(".inp-name").value.trim();
+          var da = tr.querySelector(".inp-da").value.trim();
+          var an = tr.querySelector(".inp-an").value.trim();
+          var ten = tr.querySelector(".inp-ten").value.trim();
+          var ritsu = tr.querySelector(".inp-ritsu").value.trim();
+
+          list.push({ order, pos, name, da, an, ten, ritsu });
+        });
+
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        } catch(e) {}
+      }
+
+      // 基本情報の復元
+      function loadBasicInfo() {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return false;
+        try {
+          var list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) {
+            document.getElementById("stats_tbody").innerHTML = "";
+            list.forEach(function(d) { addRow(d); });
+            return true;
+          }
+        } catch(e) {}
+        return false;
+      }
+
+      // HTML出力の生成処理
+      function build() {
+        var rows = document.querySelectorAll("#stats_tbody tr");
+        var directoryMap = getPlayerDirectoryMap();
+        var hasValidRow = false;
+
+        var html = '<div class="table-container">\n';
+        html += '<table class="baseball-data-table">\n';
+        html += '<tbody>\n';
+        html += '<tr>\n';
+        html += '<th>打順</th>\n';
+        html += '<th>守備</th>\n';
+        html += '<th class="sticky">名前</th>\n';
+        html += '<th>打</th>\n';
+        html += '<th>安</th>\n';
+        html += '<th>点</th>\n';
+        html += '<th>率</th>\n';
+
+        // ヘッダーのイニング（１〜９...全角変換）
+        for (var i = 1; i <= totalInnings; i++) {
+          var zenNum = String(i).replace(/[0-9]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) + 0xFEE0);
+          });
+          html += '<th>' + zenNum + '</th>\n';
+        }
+        html += '</tr>\n';
+
+        rows.forEach(function(tr) {
+          var order = tr.querySelector(".inp-order").value.trim();
+          var pos = tr.querySelector(".inp-pos").value.trim();
+          var name = tr.querySelector(".inp-name").value.trim();
+          var da = tr.querySelector(".inp-da").value.trim();
+          var an = tr.querySelector(".inp-an").value.trim();
+          var ten = tr.querySelector(".inp-ten").value.trim();
+          var ritsu = tr.querySelector(".inp-ritsu").value.trim();
+
+          if (order || pos || name) {
+            hasValidRow = true;
+            html += '<tr>\n';
+            html += '<td>' + esc(order) + '</td>\n';
+            html += '<td>' + esc(pos) + '</td>\n';
+
+            // 名前の照合とリンク生成
+            var matchedUrl = directoryMap[name];
+            if (matchedUrl) {
+              var href = matchedUrl.match(/^https?:\/\//) ? matchedUrl : "https://" + matchedUrl;
+              html += '<td class="sticky"><a href="' + esc(href) + '">' + esc(name) + '</a></td>\n';
+            } else {
+              html += '<td class="sticky">' + esc(name) + '</td>\n';
+            }
+
+            html += '<td>' + esc(da) + '</td>\n';
+            html += '<td>' + esc(an) + '</td>\n';
+            html += '<td>' + esc(ten) + '</td>\n';
+            html += '<td>' + esc(ritsu) + '</td>\n';
+
+            // 各イニング打席の判定
+            var inningCells = tr.querySelectorAll(".inning-cell");
+            inningCells.forEach(function(cell) {
+              var resVal = cell.querySelector(".inp-res").value.trim();
+              var isHit = cell.querySelector(".chk-hit").checked;
+              var isRbi = cell.querySelector(".chk-rbi").checked;
+
+              var classAttr = "";
+              if (isHit && isRbi) {
+                classAttr = ' class="hit-rbi"';
+              } else if (isHit) {
+                classAttr = ' class="hit"';
+              } else if (isRbi) {
+                classAttr = ' class="rbi"';
+              }
+
+              // 空の場合は &nbsp; をセット
+              var printVal = resVal ? esc(resVal) : '&nbsp;';
+              html += '<td' + classAttr + '>' + printVal + '</td>\n';
+            });
+
+            html += '</tr>\n';
+          }
+        });
+
+        html += '</tbody>\n';
+        html += '</table>\n';
+        html += '</div>';
+
+        var outEl = document.getElementById("out");
+        var previewEl = document.getElementById("preview");
+        var statusEl = document.getElementById("status");
+
+        if (hasValidRow) {
+          outEl.value = html;
+          previewEl.innerHTML = html;
+          statusEl.textContent = "生成OK";
+        } else {
+          outEl.value = "";
+          previewEl.innerHTML = "";
+          statusEl.textContent = "未生成";
+        }
+      }
+
+      function clearAll() {
+        if (!confirm("入力データをクリアしますか？")) return;
+        try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+        document.getElementById("stats_tbody").innerHTML = "";
+        totalInnings = 9;
+        renderHeaderInnings();
+        addRow();
+        build();
+      }
+
+      async function copyOut(){
+        var t = document.getElementById("out");
+        if(!t || !t.value) return;
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(t.value);
+            document.getElementById("status").textContent = "コピーしました";
+            return;
+          } catch(e) {}
+        }
+        t.focus(); t.select();
+        document.execCommand('copy');
+        document.getElementById("status").textContent = "コピーしました";
+      }
+
+      function init() {
+        renderHeaderInnings();
+
+        document.getElementById("btn_add_row").addEventListener("click", function() {
+          addRow();
+          build();
+        });
+
+        document.getElementById("btn_add_inning").addEventListener("click", function() {
+          addInningColumn();
+        });
+
+        document.getElementById("btn_clear_all").addEventListener("click", clearAll);
+        document.getElementById("btn_copy").addEventListener("click", copyOut);
+        document.getElementById("btn_select").addEventListener("click", function() {
+          var t = document.getElementById("out");
+          t.focus(); t.select();
+        });
+
+        // 保存された基本情報を復元（なければ初期1行）
+        if (!loadBasicInfo()) {
+          addRow();
+        }
+        build();
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</section>
+</main>
